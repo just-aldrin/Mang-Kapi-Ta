@@ -16,7 +16,7 @@ render_header();
     <div class="wrap hero-inner">
       <p class="eyebrow eyebrow-light">Artisanal coffee bar &middot; SM City Iloilo</p>
       <h1>Mang KAPI Ta.<span class="serif-italic">Worth Every Sip.</span></h1>
-      <p class="lead">Cupped, tested, and pulled with unhurried craftsmanship. Single origins, layered signature brews, and warm artisanal brisket sourdough.</p>
+      <p class="lead">Rooted in the warm, everyday Ilonggo invitation, Ta, Mang KAPI Ta is a home-raised specialty coffee brand in Iloilo. Making your Kapi and experience, #Wortheverysip.</p>
       <div class="hero-actions">
         <a class="btn btn-light" href="#cart">Book a coffee cart</a>
         <a class="btn btn-ghost" href="#menu">Discover our menu</a>
