@@ -1,4 +1,4 @@
--- Mang KAPI Ta: database schema.
+-- Mang Kapi Ta: database schema.
 -- Run this once in the SQL Editor of the NEW Supabase project created for this shop.
 -- Do not run it on any other project.
 

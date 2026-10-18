@@ -49,4 +49,4 @@ http.createServer(async (req, res) => {
   }
   res.setHeader('Content-Type', types[extname(file)] || 'application/octet-stream');
   res.end(readFileSync(file));
-}).listen(port, () => console.log(`Mang KAPI Ta running at http://localhost:${port}`));
+}).listen(port, () => console.log(`Mang Kapi Ta running at http://localhost:${port}`));

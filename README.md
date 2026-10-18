@@ -1,4 +1,4 @@
-# Mang KAPI Ta
+# Mang Kapi Ta
 
 **Worth Every Sip.** A storefront for an artisanal coffee bar and mobile coffee cart service in Iloilo City, with online ordering and GCash payments.
 
@@ -11,7 +11,7 @@
 
 ## Overview
 
-Mang KAPI Ta is a modern coffee brand with a brew bar at SM City Iloilo and turnkey mobile coffee carts for weddings, product debuts, and private events. This project is its website and ordering system: customers browse the menu, build an order, and pay with GCash, while event clients reserve a cart for their date.
+Mang Kapi Ta is a modern coffee brand with a brew bar at SM City Iloilo and turnkey mobile coffee carts for weddings, product debuts, and private events. This project is its website and ordering system: customers browse the menu, build an order, and pay with GCash, while event clients reserve a cart for their date.
 
 ## Features
 

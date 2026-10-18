@@ -1,4 +1,4 @@
-# Deploying Mang KAPI Ta
+# Deploying Mang Kapi Ta
 
 This guide takes you from the GitHub repo to a live site on Vercel with a Supabase database and GCash payments.
 
