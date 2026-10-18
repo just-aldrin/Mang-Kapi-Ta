@@ -100,7 +100,7 @@ p { margin: 0 0 1em; }
 .hero-inner { position: relative; z-index: 1; }
 .hero h1 { font-size: clamp(2.8rem, 8vw, 5.6rem); }
 .hero h1 .serif-italic { display: block; color: var(--tan); font-size: .86em; margin-top: 4px; }
-.lead { max-width: 560px; margin: 26px auto 34px; color: rgba(245, 239, 227, .82); font-size: 1.05rem; }
+.lead { max-width: 620px; margin: 26px auto 34px; color: rgba(245, 239, 227, .82); font-size: 1.05rem; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .hero-steam { position: absolute; left: 50%; bottom: 0; width: 220px; height: 180px; transform: translateX(-50%); z-index: 0; pointer-events: none; }
 .hero-steam i { position: absolute; bottom: 0; width: 6px; height: 120px; border-radius: 6px; background: linear-gradient(to top, rgba(201, 162, 122, .0), rgba(201, 162, 122, .35)); filter: blur(5px); animation: rise 5s infinite ease-in-out; }
