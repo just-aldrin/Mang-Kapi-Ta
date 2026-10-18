@@ -24,7 +24,11 @@ try {
 
   await check('home page is served and the cart section follows the hero', async () => {
     const html = await (await fetch(base + '/')).text();
-    assert.equal((html.match(/class="stamp-wrap"/g) || []).length, 7);
+    assert.equal((html.match(/class="stamp-card"/g) || []).length, 7);
+    // Stamps are view-only: the add button exists only inside the details popup.
+    assert.equal((html.match(/data-add=/g) || []).length, 0);
+    assert.equal((html.match(/data-d-add/g) || []).length, 1);
+    assert.ok(html.includes("<dialog class=\"drink\""));
     assert.ok(html.indexOf('class="hero"') < html.indexOf('id="cart"'));
     assert.ok(html.indexOf('id="cart"') < html.indexOf('class="strip"'));
   });

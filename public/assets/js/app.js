@@ -108,8 +108,65 @@
   /* ---------- menu filter ---------- */
   $$('.filter').forEach((btn) => btn.addEventListener('click', () => {
     $$('.filter').forEach((b) => { b.classList.toggle('is-active', b === btn); b.setAttribute('aria-selected', b === btn); });
-    $$('.stamp-wrap').forEach((s) => { s.hidden = btn.dataset.filter !== 'all' && s.dataset.category !== btn.dataset.filter; });
+    $('.stamp-card').forEach((s) => { s.hidden = btn.dataset.filter !== 'all' && s.dataset.category !== btn.dataset.filter; });
   }));
+
+  /* ---------- drink overview popup ---------- */
+  const dlg = $('#drink-dialog');
+  let current = null;
+  let qty = 1;
+  const setQty = (n) => { qty = Math.max(1, Math.min(20, n)); $('[data-d-qty]', dlg).textContent = qty; };
+
+  function openDrink(card) {
+    if (!dlg) return;
+    current = card.dataset.open;
+    const d = card.dataset;
+    $('[data-d-art]', dlg).innerHTML = card.querySelector('.stamp-art svg').outerHTML;
+    $('[data-d-price]', dlg).textContent = d.price;
+    $('[data-d-name-stamp]', dlg).textContent = d.name;
+    $('[data-d-name]', dlg).textContent = d.name;
+    $('[data-d-cat]', dlg).textContent = d.category;
+    $('[data-d-blurb]', dlg).textContent = d.blurb;
+    $('[data-d-serve]', dlg).textContent = d.serve;
+    $('[data-d-price-text]', dlg).textContent = d.price;
+    $('[data-d-tag]', dlg).textContent = d.tag;
+    $('[data-d-tag-row]', dlg).hidden = !d.tag;
+    const add = $('[data-d-add]', dlg);
+    add.classList.remove('added');
+    add.textContent = 'Add to order';
+    setQty(1);
+    document.body.style.overflow = 'hidden';
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+  function closeDrink() {
+    if (!dlg) return;
+    if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    document.body.style.overflow = '';
+  }
+  dlg?.addEventListener('close', () => { document.body.style.overflow = ''; });
+  dlg?.addEventListener('click', (e) => { if (e.target === dlg) closeDrink(); }); // click on the backdrop
+  document.addEventListener('click', (e) => {
+    const card = e.target.closest('[data-open]');
+    if (card) return openDrink(card);
+    if (!dlg?.open) return;
+    if (e.target.closest('[data-d-close]')) closeDrink();
+    else if (e.target.closest('[data-d-inc]')) setQty(qty + 1);
+    else if (e.target.closest('[data-d-dec]')) setQty(qty - 1);
+    else if (e.target.closest('[data-d-add]')) {
+      const add = $('[data-d-add]', dlg);
+      change(current, qty);
+      add.classList.add('added');
+      add.textContent = 'Added to your order';
+      const btn = $('.cart-btn');
+      btn?.classList.remove('bump'); void btn?.offsetWidth; btn?.classList.add('bump');
+      setTimeout(closeDrink, 700);
+    }
+  });
+  // Deep link: /#drink-kapi-alsaha opens that drink.
+  if (location.hash.startsWith('#drink-')) {
+    const card = $(`[data-open="${CSS.escape(location.hash.slice(7))}"]`);
+    if (card) setTimeout(() => openDrink(card), 300);
+  }
 
   /* ---------- API helpers ---------- */
   async function api(path, payload) {

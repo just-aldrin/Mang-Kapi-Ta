@@ -160,40 +160,44 @@ input.invalid, select.invalid { border-color: #b3402f; }
 .philosophy blockquote { margin: 0 0 24px; font-size: clamp(2.6rem, 7vw, 4.6rem); line-height: 1.05; color: var(--forest); }
 .philosophy p:last-child { color: var(--muted); max-width: 620px; margin-inline: auto; }
 
-/* Menu + postcard */
-.menu { padding: clamp(64px, 9vw, 110px) 0; }
-.menu-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 34px; }
+/* Menu: floating postage stamps */
+.menu { padding: clamp(64px, 9vw, 110px) 0 clamp(48px, 7vw, 80px); overflow-x: clip; }
+.menu-head { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 30px; }
 .menu-head h2 { font-size: clamp(2.2rem, 5vw, 3.6rem); }
 .menu-head h2 .serif-italic { color: var(--clay); }
 .menu-head > p { color: var(--muted); margin: 0; max-width: 460px; justify-self: end; }
-
-.postcard {
-  position: relative; border-radius: 10px; padding: clamp(18px, 3vw, 34px);
-  background:
-    repeating-linear-gradient(135deg, transparent 0 14px, rgba(139, 94, 75, .09) 14px 15px),
-    var(--paper);
-  border: 1px solid var(--line); box-shadow: var(--shadow);
-}
-.postcard::before { /* airmail border */
-  content: ""; position: absolute; inset: 8px; border-radius: 6px; pointer-events: none;
-  border: 5px solid transparent;
-  border-image: repeating-linear-gradient(135deg, #b3402f 0 14px, var(--paper) 14px 22px, #3f5c82 22px 36px, var(--paper) 36px 44px) 5;
-  opacity: .55;
-}
-.postcard-top { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; padding: 8px 8px 22px; }
-.postcard-title { font-size: clamp(1.4rem, 3vw, 2rem); color: var(--forest); }
-.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 18px; }
 .filter { padding: 9px 16px; border-radius: 999px; border: 1.5px solid var(--forest); background: transparent; color: var(--forest); font: 600 .7rem var(--sans); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
 .filter.is-active, .filter:hover { background: var(--forest); color: var(--cream); }
 
-.stamps { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); gap: 34px 26px; padding: 10px 8px 14px; }
-.stamp-wrap { position: relative; transform: rotate(var(--tilt)); transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .3s; filter: drop-shadow(0 10px 12px rgba(43, 33, 26, .22)); }
-.stamp-wrap:hover, .stamp-wrap:focus-within { transform: rotate(0) translateY(-8px) scale(1.02); filter: drop-shadow(0 20px 20px rgba(43, 33, 26, .3)); z-index: 3; }
-.stamp-wrap[hidden] { display: none; }
+.stamp-field {
+  --w: 244px;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start;
+  max-width: 1040px; margin: 0 auto; padding: 36px 0 56px;
+}
+.stamp-card {
+  --s: 1; --rot: 0deg; --dy: 0px; --z: 1; --delay: 0s;
+  position: relative; top: var(--dy); z-index: var(--z);
+  font-size: calc(var(--w) / 16 * var(--s)); width: 16em; margin: -.3em -.5em;
+  padding: 0; border: 0; background: none; color: inherit; font-family: inherit; text-align: center; cursor: pointer;
+  rotate: var(--rot);
+  filter: drop-shadow(0 .9em 1em rgba(43, 33, 26, .26));
+  transition: rotate .4s cubic-bezier(.2, .8, .2, 1), scale .4s cubic-bezier(.2, .8, .2, 1), filter .3s;
+  animation: drift 7s ease-in-out var(--delay) infinite;
+}
+.stamp-card[hidden] { display: none; }
+.stamp-card:hover, .stamp-card:focus-visible {
+  rotate: 0deg; scale: 1.07; z-index: 30; animation-play-state: paused;
+  filter: drop-shadow(0 1.3em 1.4em rgba(43, 33, 26, .34));
+}
+.stamp-card:focus-visible { outline: none; }
+.stamp-card:focus-visible .stamp-face { outline: 3px solid var(--tan); outline-offset: 2px; }
+@keyframes drift { 0%, 100% { translate: 0 0; } 50% { translate: 0 -.5em; } }
 
-/* Perforated postage-stamp edge: four edge masks, each punching a row of semicircles. */
+/* Perforated postage-stamp edge: four edge masks, each punching a row of semicircles.
+   `round` keeps the tiles gap-free so no content is hidden between holes. */
 .stamp {
-  --hole: 5.5px; --pitch: 18px; padding: 13px; background: #fff;
+  --hole: .34em; --pitch: 1.1em; display: block; padding: .8em; background: #fffdf6;
   -webkit-mask:
     radial-gradient(circle var(--hole) at 50% 0, #0000 97%, #000) top / var(--pitch) 100% round no-repeat,
     radial-gradient(circle var(--hole) at 50% 100%, #0000 97%, #000) bottom / var(--pitch) 100% round no-repeat,
@@ -207,21 +211,38 @@ input.invalid, select.invalid { border-color: #b3402f; }
     radial-gradient(circle var(--hole) at 100% 50%, #0000 97%, #000) right / 100% var(--pitch) no-repeat round;
           mask-composite: intersect;
 }
-.stamp-face { display: flex; flex-direction: column; height: 100%; padding: 12px; border: 1.5px solid var(--forest); background: var(--paper); }
-.stamp-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-.stamp-country { font: 700 .6rem var(--sans); letter-spacing: .2em; color: var(--clay); }
-.stamp-value { font: 700 1.35rem/1 var(--serif); color: var(--forest); }
-.stamp-art { border: 1.5px solid var(--forest); background: var(--cream); aspect-ratio: 1 / 1; overflow: hidden; margin-bottom: 12px; }
-.stamp-art svg { width: 100%; height: 100%; transition: transform .5s; }
-.stamp-wrap:hover .stamp-art svg { transform: scale(1.06) rotate(-1.5deg); }
-.stamp-name { font-size: 1.22rem; margin-bottom: 6px; }
-.stamp-blurb { font-size: .84rem; color: var(--muted); margin-bottom: 10px; flex: 1; }
-.stamp-meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-top: 10px; border-top: 1px dashed var(--line); margin-bottom: 12px; }
-.stamp-tag { background: var(--forest); color: var(--tan); padding: 3px 9px; border-radius: 999px; font-weight: 600; }
-.btn-stamp { width: 100%; padding: 12px 14px; background: var(--forest); color: var(--cream); font-size: .7rem; }
-.btn-stamp:hover { background: var(--clay); }
-.btn-stamp.added { background: var(--moss); color: var(--espresso); }
-.stamp-wrap > .postmark { position: absolute; right: -26px; top: -14px; width: 118px; color: var(--clay); opacity: .5; transform: rotate(14deg); pointer-events: none; mix-blend-mode: multiply; z-index: 2; }
+.stamp-face { display: block; padding: .55em; border: 1px solid rgba(43, 33, 26, .35); background: #fffdf6; }
+.stamp-art { position: relative; display: block; aspect-ratio: 1 / 1; overflow: hidden; background: var(--cream); }
+.stamp-art svg { display: block; width: 100%; height: 100%; }
+.stamp-denom {
+  position: absolute; top: .4em; left: .4em; padding: .15em .55em; border-radius: 999px;
+  background: rgba(255, 253, 246, .92); color: var(--forest); font: 700 .95em/1.2 var(--serif);
+}
+.stamp-name { display: block; margin-top: .55em; font: 700 1.02em/1.2 var(--serif); color: var(--ink); }
+.stamp-card > .postmark { position: absolute; right: -1.6em; top: -.9em; width: 7em; color: var(--clay); opacity: .55; rotate: 14deg; pointer-events: none; mix-blend-mode: multiply; }
+.stamp-hint { text-align: center; margin: 0; font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+
+/* Drink overview popup */
+.drink {
+  border: 0; padding: 0; width: min(800px, calc(100% - 28px)); max-height: calc(100dvh - 28px); overflow: auto;
+  border-radius: 24px; background: var(--paper); color: var(--ink); box-shadow: 0 40px 90px -30px rgba(0, 0, 0, .7);
+}
+.drink::backdrop { background: rgba(20, 16, 13, .66); backdrop-filter: blur(4px); }
+.drink[open] { animation: pop .3s cubic-bezier(.2, .8, .2, 1); }
+@keyframes pop { from { opacity: 0; transform: translateY(18px) scale(.96); } }
+.drink-close { position: absolute; top: 14px; right: 14px; z-index: 2; background: var(--paper); }
+.drink-grid { display: grid; grid-template-columns: 1fr 1.1fr; gap: 30px; align-items: center; padding: 34px; }
+.drink-stamp { font-size: 17px; justify-self: center; width: 16em; rotate: -4deg; filter: drop-shadow(0 .9em 1em rgba(43, 33, 26, .28)); }
+.drink-info .eyebrow { margin-bottom: 8px; }
+.drink-info h3 { font-size: clamp(1.7rem, 4vw, 2.3rem); margin-bottom: 12px; }
+.drink-blurb { color: var(--muted); margin-bottom: 18px; }
+.drink-facts { list-style: none; padding: 0; margin: 0 0 22px; border-top: 1px dashed var(--line); }
+.drink-facts li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: .9rem; }
+.drink-facts li[hidden] { display: none; }
+.drink-facts span { color: var(--muted); text-transform: uppercase; letter-spacing: .1em; font-size: .7rem; font-weight: 600; align-self: center; }
+.drink-buy { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 12px; }
+.drink-buy .btn { flex: 1; min-width: 180px; }
+.drink-buy .btn.added { background: var(--moss); color: var(--espresso); }
 
 /* Visit */
 .visit { padding: clamp(64px, 9vw, 110px) 0; background: #ece3d0; }
@@ -333,16 +354,19 @@ table.data th { font-size: .66rem; letter-spacing: .14em; text-transform: upperc
   .header-row { flex-wrap: wrap; height: auto; padding: 10px 0 0; row-gap: 2px; }
   .nav { order: 3; width: 100%; justify-content: center; gap: 26px; padding: 6px 0 10px; border-top: 1px solid var(--line); }
   .cart-stats { grid-template-columns: 1fr 1fr 1fr; }
-  .stamp-wrap > .postmark { right: -8px; }
+  .stamp-field { --w: 196px; max-width: 760px; }
+  .drink-grid { grid-template-columns: 1fr; gap: 22px; padding: 28px 22px 24px; }
+  .drink-stamp { font-size: 15px; }
 }
 @media (max-width: 520px) {
   .field-row { grid-template-columns: 1fr; }
   .logo-text { display: none; }
-  .stamps { grid-template-columns: 1fr; padding-inline: 16px; }
+  .stamp-field { --w: 150px; padding-top: 28px; }
+  .stamp-card { margin: -.05em -.25em; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-  .stamp-wrap { transform: none; }
+  .stamp-card { animation: none !important; }
 }
 
 /* Dark header: the cream logo is shown exactly as supplied */
