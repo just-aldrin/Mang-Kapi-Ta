@@ -94,7 +94,7 @@ p { margin: 0 0 1em; }
   }
 }
 .hero-logo { width: 80px; height: auto; margin: 0 auto 22px; opacity: .95; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, .45)); }
-.logo-img { width: 56px; height: auto; }
+.logo-img { width: 72px; height: auto; }
 .hero h1, .hero .lead { text-shadow: 0 2px 24px rgba(0, 0, 0, .45); }
 .hero::after { content: ""; position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); opacity: .07; mix-blend-mode: overlay; pointer-events: none; }
 .hero-inner { position: relative; z-index: 1; }
