@@ -195,16 +195,16 @@ input.invalid, select.invalid { border-color: #b3402f; }
 .stamp {
   --hole: 5.5px; --pitch: 18px; padding: 13px; background: #fff;
   -webkit-mask:
-    radial-gradient(circle var(--hole) at 50% 0, #0000 97%, #000) top / var(--pitch) 100% space no-repeat,
-    radial-gradient(circle var(--hole) at 50% 100%, #0000 97%, #000) bottom / var(--pitch) 100% space no-repeat,
-    radial-gradient(circle var(--hole) at 0 50%, #0000 97%, #000) left / 100% var(--pitch) no-repeat space,
-    radial-gradient(circle var(--hole) at 100% 50%, #0000 97%, #000) right / 100% var(--pitch) no-repeat space;
+    radial-gradient(circle var(--hole) at 50% 0, #0000 97%, #000) top / var(--pitch) 100% round no-repeat,
+    radial-gradient(circle var(--hole) at 50% 100%, #0000 97%, #000) bottom / var(--pitch) 100% round no-repeat,
+    radial-gradient(circle var(--hole) at 0 50%, #0000 97%, #000) left / 100% var(--pitch) no-repeat round,
+    radial-gradient(circle var(--hole) at 100% 50%, #0000 97%, #000) right / 100% var(--pitch) no-repeat round;
   -webkit-mask-composite: source-in, source-in, source-in;
           mask:
-    radial-gradient(circle var(--hole) at 50% 0, #0000 97%, #000) top / var(--pitch) 100% space no-repeat,
-    radial-gradient(circle var(--hole) at 50% 100%, #0000 97%, #000) bottom / var(--pitch) 100% space no-repeat,
-    radial-gradient(circle var(--hole) at 0 50%, #0000 97%, #000) left / 100% var(--pitch) no-repeat space,
-    radial-gradient(circle var(--hole) at 100% 50%, #0000 97%, #000) right / 100% var(--pitch) no-repeat space;
+    radial-gradient(circle var(--hole) at 50% 0, #0000 97%, #000) top / var(--pitch) 100% round no-repeat,
+    radial-gradient(circle var(--hole) at 50% 100%, #0000 97%, #000) bottom / var(--pitch) 100% round no-repeat,
+    radial-gradient(circle var(--hole) at 0 50%, #0000 97%, #000) left / 100% var(--pitch) no-repeat round,
+    radial-gradient(circle var(--hole) at 100% 50%, #0000 97%, #000) right / 100% var(--pitch) no-repeat round;
           mask-composite: intersect;
 }
 .stamp-face { display: flex; flex-direction: column; height: 100%; padding: 12px; border: 1.5px solid var(--forest); background: var(--paper); }
@@ -330,7 +330,8 @@ table.data th { font-size: .66rem; letter-spacing: .14em; text-transform: upperc
 @media (max-width: 900px) {
   .cart-head, .cart-grid, .menu-head, .visit-grid, .checkout-grid, .strip-grid, .footer-grid { grid-template-columns: 1fr; }
   .menu-head > p { justify-self: start; }
-  .nav { display: none; }
+  .header-row { flex-wrap: wrap; height: auto; padding: 10px 0 0; row-gap: 2px; }
+  .nav { order: 3; width: 100%; justify-content: center; gap: 26px; padding: 6px 0 10px; border-top: 1px solid var(--line); }
   .cart-stats { grid-template-columns: 1fr 1fr 1fr; }
   .stamp-wrap > .postmark { right: -8px; }
 }
