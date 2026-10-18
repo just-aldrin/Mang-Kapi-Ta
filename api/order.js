@@ -2,9 +2,7 @@ import crypto from 'node:crypto';
 import * as db from '../lib/db.js';
 import { findItem } from '../lib/menu.js';
 import { guardWrite, query, readJson, safeEqual, send } from '../lib/http.js';
-import { paymentsMode } from '../lib/payments.js';
-
-const peso = (c) => `₱${(c / 100).toLocaleString('en-PH')}`;
+import { paymentsMode, verifyGcash } from '../lib/payments.js';
 
 export default async function handler(req, res) {
   try {
@@ -21,6 +19,12 @@ async function getOrder(req, res) {
   const { ref = '', k = '' } = query(req);
   const order = ref ? await db.getOrder(ref) : null;
   if (!order || !safeEqual(order.access_key, k)) return send(res, 404, { error: 'Order not found.' });
+
+  // A GCash payment can still be "processing" when the customer returns, and the webhook may be late.
+  // Ask the gateway directly so the confirmation page settles on its own.
+  if (order.status === 'pending' && order.provider === 'paymongo') {
+    try { order.status = await verifyGcash(order); } catch (err) { console.error('order verify:', err.message); }
+  }
 
   send(res, 200, {
     ref: order.ref,
@@ -71,8 +75,7 @@ async function createOrder(req, res) {
     const item = findItem(slug);
     return { product_slug: slug, name: item.name, price: item.price, qty };
   });
-  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  if (total < 2000) return send(res, 422, { error: `The minimum order is ${peso(2000)}.` }); // GCash minimum is PHP 20
+  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0); // GCash accepts PHP 1 to PHP 100,000; the menu keeps orders well inside that
 
   const ref = 'KTA-' + crypto.randomBytes(5).toString('hex').toUpperCase();
   const accessKey = crypto.randomBytes(18).toString('hex');

@@ -40,7 +40,7 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>. With no Supabase variables set, an in-memory store is used so everything can be tried without setup (data resets when the server restarts, and this fallback is refused on Vercel). Run `npm test` for the end-to-end checks.
+Open <http://localhost:3000>. With no Supabase variables set, an in-memory store is used so everything can be tried without setup (data resets when the server restarts, and this fallback is refused on Vercel). Run `npm test` for the end-to-end and payment checks.
 
 ## Deploy
 

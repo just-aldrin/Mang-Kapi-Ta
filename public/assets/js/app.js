@@ -281,33 +281,43 @@
   }
 
   if (PAGE === 'order') {
-    (async () => {
-      let order;
-      try { order = await fetchOrder(); } catch { return missing(); }
+    const paint = (order) => {
       const paid = order.status === 'paid' || order.status === 'fulfilled';
       const failed = order.status === 'failed';
       const mark = $('[data-status-mark]');
       mark.className = 'status-mark ' + (paid ? 'ok' : failed ? 'bad' : 'wait');
       mark.textContent = paid ? '✓' : failed ? '!' : '…';
-      $('[data-status-title]').textContent = paid ? 'Payment received' : failed ? 'Payment not completed' : 'Waiting for payment';
+      $('[data-status-title]').textContent = paid ? 'Payment received' : failed ? 'Payment not completed' : 'Confirming your payment';
       $('[data-status-text]').textContent = paid
         ? `Thank you, ${order.name}. Your order is being prepared.`
         : failed
           ? 'The GCash payment was cancelled or did not go through. Nothing was charged.'
-          : 'We have not received confirmation from GCash yet. Reload this page in a moment.';
+          : 'We are confirming your payment with GCash. This page updates by itself, so please keep it open.';
       $('[data-order-ref]').textContent = order.ref;
       $('[data-test-notice]').hidden = !(paid && order.provider === 'sandbox');
       $('[data-summary-lines]').innerHTML = lineItems(order.items);
       $('[data-summary-total]').textContent = peso(order.total);
       $('[data-total-label]').textContent = paid ? 'Total paid' : 'Total due';
       $('[data-pickup-note]').hidden = !paid;
-      if (!paid) {
-        const action = $('[data-order-action]');
+      const action = $('[data-order-action]');
+      if (paid) { action.textContent = 'Order something else'; action.href = '/#menu'; }
+      else {
         action.textContent = failed ? 'Try GCash again' : 'Back to payment';
         action.href = `/pay?ref=${encodeURIComponent(ref)}&k=${encodeURIComponent(key)}`;
       }
       if (paid) { cart = {}; save(); render(); }
       $('[data-order-card]').hidden = false;
+    };
+
+    (async () => {
+      let order;
+      try { order = await fetchOrder(); } catch { return missing(); }
+      paint(order);
+      // While the gateway is still deciding, re-check every 3 seconds for up to 2 minutes.
+      for (let i = 0; order.status === 'pending' && i < 40; i++) {
+        await new Promise((r) => setTimeout(r, 3000));
+        try { order = await fetchOrder(); paint(order); } catch { /* try again on the next tick */ }
+      }
     })();
   }
 

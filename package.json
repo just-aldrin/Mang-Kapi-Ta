@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Mang KAPI Ta storefront with GCash payments, built for Vercel and Supabase.",
+  "description": "Mang Kapi Ta storefront with GCash payments, built for Vercel and Supabase.",
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs && node scripts/dev.mjs",
-    "test": "node scripts/test.mjs"
+    "test": "node scripts/test.mjs && node scripts/test-payments.mjs"
   },
   "engines": {
     "node": ">=20"
