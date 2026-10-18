@@ -2,9 +2,9 @@
 
 **Worth Every Sip.** A storefront for an artisanal coffee bar and mobile coffee cart service in Iloilo City, with online ordering and GCash payments.
 
-![PHP](https://img.shields.io/badge/PHP-8.1%2B-777BB4?style=flat-square&logo=php&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
+![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white)
+![Vercel](https://img.shields.io/badge/Hosted%20on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)
+![Supabase](https://img.shields.io/badge/Database-Supabase-3ECF8E?style=flat-square&logo=supabase&logoColor=white)
 ![GCash](https://img.shields.io/badge/Payments-GCash%20via%20PayMongo-0B62E4?style=flat-square)
 
 ---
@@ -22,40 +22,42 @@ Mang KAPI Ta is a modern coffee brand with a brew bar at SM City Iloilo and turn
 | **Order cart** | A slide-out cart with quantity controls, persisted in the browser between visits. |
 | **GCash payments** | Checkout, a payment portal, GCash redirect, return verification, and a signed webhook. |
 | **Test mode** | Without a payment key, a simulated GCash screen lets the entire flow be tested without moving money. |
-| **Staff view** | A password-protected page listing orders and event inquiries, with a "mark ready" action. |
+| **Staff view** | A password-protected page at `/admin` listing orders and event inquiries, with a "mark ready" action. |
 | **Accessibility** | Skip link, keyboard-operable cart, visible focus states, labelled forms, and reduced-motion support. |
 
 ## Tech stack
 
-- **Backend:** PHP 8.1+ with no framework
-- **Database:** SQLite through PDO (created automatically on first run)
-- **Frontend:** Vanilla JavaScript and CSS, with illustrations drawn as inline SVG
+- **Hosting:** Vercel (static pages plus serverless functions)
+- **Backend:** Node.js serverless functions in `api/`, no framework
+- **Database:** Supabase (Postgres), accessed only from the server
+- **Frontend:** Static HTML generated at build time, vanilla JavaScript and CSS, inline SVG illustrations
 - **Payments:** GCash through PayMongo
-- **Hosting target:** XAMPP (Apache) or any PHP host
 
-## Getting started
+## Run locally
 
-1. Install [XAMPP](https://www.apachefriends.org/) and clone this repository into `htdocs`:
+```
+npm install
+npm run dev
+```
 
-   ```
-   git clone https://github.com/just-aldrin/Mang-Kapi-Ta.git C:\xampp\htdocs\Mang-Kapi-Ta
-   ```
+Open <http://localhost:3000>. With no Supabase variables set, an in-memory store is used so everything can be tried without setup (data resets when the server restarts, and this fallback is refused on Vercel). Run `npm test` for the end-to-end checks.
 
-2. Start Apache from the XAMPP control panel.
-3. Open <http://localhost/Mang-Kapi-Ta/>. The database and menu are created on the first request.
+## Deploy
 
-No build step or package install is required.
+Step-by-step instructions for Supabase, Vercel, and GCash are in [SETUP.md](SETUP.md).
 
 ## Configuration
 
-Copy `.env.example` to `.env` and set what you need. `.env` is git-ignored.
+Copy `.env.example` to `.env` locally. On Vercel, add the same names under Project Settings > Environment Variables.
 
 | Variable | Purpose |
 | --- | --- |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Database connection. The service-role key is server-only. |
 | `PAYMONGO_SECRET_KEY` | Enables live GCash checkout. Leave blank for test mode. |
 | `PAYMONGO_WEBHOOK_SECRET` | Verifies webhook signatures from PayMongo. |
-| `APP_URL` | Public HTTPS address, used for GCash return URLs in production. |
-| `ADMIN_PASSWORD` | Enables the staff page at `/admin/`. |
+| `DEMO_PAYMENTS` | Set to `true` to keep the test-mode GCash simulator on in production (portfolio demo). |
+| `ADMIN_PASSWORD` | Enables the staff page at `/admin`. |
+| `APP_URL` | Public URL, used for GCash return links (auto-detected on Vercel). |
 | `SHOP_PHONE`, `SHOP_EMAIL` | Contact details shown on the site. |
 
 ## GCash payment flow
@@ -67,33 +69,30 @@ Menu -> Cart -> Checkout -> Payment portal -> GCash -> Return check -> Confirmat
                                                   \-> Webhook (payment.paid) ----/
 ```
 
-1. Checkout creates a pending order. Item prices are read from the database, never from the browser.
+1. Checkout creates a pending order. Item prices are read from the server-side menu, never from the browser.
 2. The payment portal creates a PayMongo payment and redirects the customer to GCash.
 3. An order is marked paid only after PayMongo confirms it, either when the customer returns or through the signed webhook, which also checks that the paid amount matches the order total.
-
-To go live, create a PayMongo account, complete verification, use an `sk_test_` key first, and register `https://YOUR-DOMAIN/payment/webhook.php` for the `payment.paid` event. More detail is in [SETUP.md](SETUP.md).
 
 ## Project structure
 
 ```
-index.php            Storefront (hero, coffee carts, menu, visit)
-checkout.php         Customer details and order summary
-pay.php              Payment portal
-order.php            Confirmation and receipt
-payment/             GCash return, webhook, and test-mode simulator
-api/                 Order, inquiry, and newsletter endpoints
-admin/               Staff view
-inc/                 Bootstrap, database, payments, layout, illustrations
-assets/              CSS and JavaScript
+public/              Static assets; HTML pages are generated here by the build
+  assets/            CSS and browser JavaScript
+api/                 Serverless endpoints: order, pay, payment-return, webhook, sandbox, inquiry, subscribe, admin
+lib/                 Menu, database layer, payments, page templates, illustrations, HTTP helpers
+scripts/             build.mjs (page generator), dev.mjs (local server), test.mjs (end-to-end checks)
+supabase/schema.sql  Database schema to run in your Supabase project
+legacy-php/          The earlier PHP and SQLite version, kept for reference
 ```
 
 ## Security notes
 
-- CSRF tokens protect every form and API call.
-- All database access uses prepared statements, and all output is escaped.
-- Orders are visible only to the browser session that created them.
-- `inc/`, `data/`, and `.env` are blocked from direct web access by `.htaccess`.
+- Each order has a secret access key in its link, so one customer cannot open another's order.
+- Writes accept only same-origin JSON requests, which blocks cross-site request forgery without needing cookies.
+- Database tables use row-level security with no public policies; only the server can read or write them.
+- The staff session is an HMAC-signed, expiring, HttpOnly, SameSite=Strict cookie.
 - Webhook signatures are verified with HMAC-SHA256 and a constant-time comparison.
+- In production the test-mode payment simulator is off unless `DEMO_PAYMENTS=true`, so orders cannot be marked paid for free.
 
 ## Author
 

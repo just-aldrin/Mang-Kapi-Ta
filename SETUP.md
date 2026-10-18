@@ -1,33 +1,51 @@
-# Mang KAPI Ta storefront: setup
+# Deploying Mang KAPI Ta
 
-PHP 8.1+ with SQLite (`pdo_sqlite`) and cURL. Both ship with XAMPP.
+This guide takes you from the GitHub repo to a live site on Vercel with a Supabase database and GCash payments.
 
-## Run locally
-1. Start Apache in XAMPP.
-2. Open `http://localhost/Mang-Kapi-Ta/`. The database (`data/kapi.sqlite`) and menu are created on the first request.
+## 1. Create the database (Supabase)
 
-## GCash payments
-GCash has no public API for individual merchants, so payments go through PayMongo, a licensed Philippine gateway that offers GCash as a payment method.
+Use a **new, separate** Supabase project for this shop. Do not reuse another project's database.
 
-| Mode | When | What happens |
-| --- | --- | --- |
-| Test mode | `PAYMONGO_SECRET_KEY` is blank | A simulated GCash screen approves or declines the payment. No money moves. |
-| Live | `PAYMONGO_SECRET_KEY` is set | The customer is redirected to the real GCash checkout. |
+1. In Supabase, choose **New project**, name it (for example `mang-kapi-ta`), and wait for it to finish provisioning.
+2. Open **SQL Editor**, paste the contents of [supabase/schema.sql](supabase/schema.sql), and run it. This creates the tables and locks them so only the server can use them.
+3. Open **Project Settings > API** and copy two values:
+   - **Project URL** (becomes `SUPABASE_URL`)
+   - **service_role** key (becomes `SUPABASE_SERVICE_ROLE_KEY`). Treat it like a password. Never put it in front-end code or commit it.
 
-To go live:
-1. Create a PayMongo account and complete business verification.
-2. Copy `.env.example` to `.env` and set `PAYMONGO_SECRET_KEY` (use an `sk_test_` key first).
-3. Set `APP_URL` to your public HTTPS address.
-4. In the PayMongo dashboard, add a webhook for `payment.paid` pointing to `https://YOUR-DOMAIN/payment/webhook.php`, and put its secret in `PAYMONGO_WEBHOOK_SECRET`.
+## 2. Deploy to Vercel
 
-Order totals are always computed on the server from the database, and an order is marked paid only after the gateway confirms it (return page check or signed webhook).
+1. In Vercel, choose **Add New > Project** and import the `Mang-Kapi-Ta` GitHub repository.
+2. Leave the framework preset as **Other**. The build command and output folder are already set in `vercel.json` (`npm run build`, `public`).
+3. Before clicking Deploy, open **Environment Variables** and add:
 
-## Staff view
-Set `ADMIN_PASSWORD` in `.env`, then open `/admin/` to see orders and cart inquiries.
+| Name | Value |
+| --- | --- |
+| `SUPABASE_URL` | from step 1 |
+| `SUPABASE_SERVICE_ROLE_KEY` | from step 1 |
+| `ADMIN_PASSWORD` | a long random password for `/admin` |
+| `DEMO_PAYMENTS` | `true` (portfolio demo, test-mode GCash). Remove this once real payments are on. |
 
-## Layout
-- `index.php` storefront; `checkout.php`, `pay.php`, `order.php` purchase flow
-- `payment/` GCash return, webhook, and test-mode simulator
-- `api/` order, inquiry, and newsletter endpoints
-- `inc/` bootstrap, database, payments, layout, and menu illustrations
-- `assets/` CSS and JavaScript
+4. Click **Deploy**. When it finishes, open your `.vercel.app` address, add items, and check out. In demo mode you will see a simulated GCash screen labelled TEST MODE.
+
+## 3. Turn on real GCash payments (when ready)
+
+GCash has no public API for individual merchants, so payments go through PayMongo.
+
+1. Create a PayMongo account and complete business verification. Start with the **test** key.
+2. In Vercel, add `PAYMONGO_SECRET_KEY` (an `sk_test_...` key first, later `sk_live_...`) and remove `DEMO_PAYMENTS`.
+3. In the PayMongo dashboard, create a webhook for the `payment.paid` event pointing to `https://YOUR-DOMAIN/api/webhook`. Copy its secret into Vercel as `PAYMONGO_WEBHOOK_SECRET`.
+4. Redeploy so the new variables take effect, then place a test order.
+
+If you set neither `PAYMONGO_SECRET_KEY` nor `DEMO_PAYMENTS` in production, checkout reports that online payments are unavailable. This is deliberate: it stops anyone from marking orders as paid without paying.
+
+## 4. Staff page
+
+Open `/admin` and sign in with `ADMIN_PASSWORD` to see orders and event inquiries, and to mark paid orders as ready.
+
+## Local development
+
+```
+npm install
+npm run dev     # http://localhost:3000, in-memory data unless SUPABASE_* are set in .env
+npm test        # end-to-end checks
+```
