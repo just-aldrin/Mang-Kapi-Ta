@@ -233,6 +233,51 @@
     mRefresh();
   }
 
+  /* ---------- branch map (Leaflet + OpenStreetMap, loaded when it scrolls into view) ---------- */
+  const mapEl = $('#branch-map');
+  if (mapEl) {
+    const branchBtns = $$('[data-branch]');
+    const LEAFLET = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/';
+    const startMap = () => {
+      const L = window.L;
+      if (!L) return;
+      const map = L.map(mapEl, { scrollWheelZoom: false, dragging: !L.Browser.mobile, tap: false, zoomControl: true });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
+      const icon = L.divIcon({
+        className: 'kapi-pin-wrap', iconSize: [60, 58], iconAnchor: [30, 56], popupAnchor: [0, -52],
+        html: '<span class="kapi-pin"><img src="/assets/images/logo-cream.png" alt=""></span>',
+      });
+      const pins = branchBtns.map((btn) => {
+        const at = [Number(btn.dataset.lat), Number(btn.dataset.lng)];
+        const marker = L.marker(at, { icon, title: btn.dataset.name, keyboard: true }).addTo(map).bindPopup(esc(btn.dataset.name));
+        marker.on('click', () => select(btn, false));
+        return { btn, marker, at };
+      });
+      function select(btn, fly = true) {
+        branchBtns.forEach((b) => { b.classList.toggle('is-active', b === btn); b.setAttribute('aria-pressed', String(b === btn)); });
+        const go = $('[data-directions]');
+        if (go) go.href = `https://www.google.com/maps/search/?api=1&query=${btn.dataset.lat},${btn.dataset.lng}`;
+        const pin = pins.find((p) => p.btn === btn);
+        if (fly) { map.flyTo(pin.at, 16, { duration: 0.8 }); pin.marker.openPopup(); }
+      }
+      branchBtns.forEach((btn) => btn.addEventListener('click', () => select(btn)));
+      map.fitBounds(L.latLngBounds(pins.map((p) => p.at)), { padding: [60, 60], maxZoom: 16 });
+    };
+    const loadMap = () => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = LEAFLET + 'leaflet.css';
+      document.head.appendChild(css);
+      const js = document.createElement('script');
+      js.src = LEAFLET + 'leaflet.js'; js.onload = startMap;
+      js.onerror = () => { mapEl.textContent = 'The map could not load. Use Get directions instead.'; mapEl.classList.add('is-failed'); };
+      document.head.appendChild(js);
+    };
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((e) => { if (e[0].isIntersecting) { io.disconnect(); loadMap(); } }, { rootMargin: '400px' });
+      io.observe(mapEl);
+    } else loadMap();
+  }
+
   /* ---------- API helpers ---------- */
   async function api(path, payload) {
     const res = await fetch('/api/' + path, payload === undefined
