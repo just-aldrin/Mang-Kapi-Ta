@@ -375,9 +375,10 @@
 
     $('[data-admin-form]').addEventListener('submit', async (e) => {
       e.preventDefault();
+      const form = e.currentTarget; // e.currentTarget is cleared once the handler awaits
       try {
-        await api('admin', { action: 'login', password: e.currentTarget.password.value });
-        e.currentTarget.reset();
+        await api('admin', { action: 'login', password: form.password.value });
+        form.reset();
         loadAdmin();
       } catch (err) { say($('[data-admin-msg]'), err.message, false); }
     });
