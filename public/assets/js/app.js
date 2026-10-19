@@ -15,6 +15,7 @@
 
   /* ---------- cart state ---------- */
   const SIZES = window.KAPI_SIZES || {};
+  const sizeLabel = (k, sep = ' ') => (SIZES[k].oz ? `${SIZES[k].label}${sep}${SIZES[k].oz} oz` : SIZES[k].label);
   const has = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
 
   // A cart line is one item in one size with one choice, stored as "slug~size~choice" ("-" when not applicable).
@@ -27,7 +28,7 @@
     const choice = rawChoice === '-' ? null : rawChoice;
     if (item.sizes ? !(size && has(item.sizes, size)) : size) return null;
     if (item.choice ? !(choice && item.choice.options.includes(choice)) : choice) return null;
-    const detail = [item.sizes ? `${SIZES[size].label} ${SIZES[size].oz} oz` : null, choice].filter(Boolean).join(' · ');
+    const detail = [item.sizes ? sizeLabel(size) : null, choice].filter(Boolean).join(' · ');
     return { item, size, choice, detail, unit: item.sizes ? item.sizes[size] : item.price };
   }
   const fullName = (d) => d.item.name + (d.detail ? ` (${d.detail})` : '');
@@ -160,7 +161,7 @@
     $('[data-d-sizes-group]', dlg).hidden = !item.sizes;
     if (item.sizes) {
       $('[data-d-sizes]', dlg).innerHTML = Object.entries(item.sizes)
-        .map(([k, p], i) => optionHtml('d-size', k, `${SIZES[k].label} · ${SIZES[k].oz} oz`, p, i === 0)).join('');
+        .map(([k, p], i) => optionHtml('d-size', k, sizeLabel(k, ' · '), p, i === 0)).join('');
     }
     $('[data-d-choice-group]', dlg).hidden = !item.choice;
     if (item.choice) {
@@ -204,6 +205,32 @@
       $(`.filter[data-filter="${CSS.escape(card.dataset.category)}"]`)?.click();
       setTimeout(() => openDrink(card), 300);
     }
+  }
+
+  /* ---------- merch: size, quantity, add to order ---------- */
+  const merch = $('[data-merch]');
+  if (merch) {
+    const item = has(MENU, merch.dataset.merch) ? MENU[merch.dataset.merch] : null;
+    const add = $('[data-m-add]', merch);
+    let mQty = 1;
+    const mSize = () => $('input[name="m-size"]:checked', merch)?.value;
+    const mUnit = () => (item && has(item.sizes, mSize()) ? item.sizes[mSize()] : 0);
+    const mRefresh = () => {
+      $('[data-m-qty]', merch).textContent = mQty;
+      if (!add.classList.contains('added')) add.textContent = `Add to order · ${peso(mUnit() * mQty)}`;
+    };
+    merch.addEventListener('change', (e) => { if (e.target.matches('input[type="radio"]')) { add.classList.remove('added'); mRefresh(); } });
+    $('[data-m-inc]', merch).addEventListener('click', () => { mQty = Math.min(20, mQty + 1); add.classList.remove('added'); mRefresh(); });
+    $('[data-m-dec]', merch).addEventListener('click', () => { mQty = Math.max(1, mQty - 1); add.classList.remove('added'); mRefresh(); });
+    add.addEventListener('click', () => {
+      if (!item || !mSize()) return;
+      change(lineKey(item.slug, mSize(), null), mQty);
+      add.classList.add('added');
+      add.textContent = 'Added to your order';
+      bumpCart();
+      setTimeout(() => { add.classList.remove('added'); mQty = 1; mRefresh(); }, 1600);
+    });
+    mRefresh();
   }
 
   /* ---------- API helpers ---------- */
