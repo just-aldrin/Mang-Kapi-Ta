@@ -545,7 +545,6 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .package-drinks { margin: 10px 0 0; text-align: center; color: var(--rust); font-weight: 700; font-size: .9rem; }
 .package-flavors { margin: 0; text-align: center; font-weight: 700; font-size: .9rem; line-height: 1.7; color: var(--rust-dark); }
 .package-foot { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: auto; padding-top: 12px; }
-.package-price { padding: 7px 22px; border-radius: 999px; background: var(--rust); color: var(--cream); font: 700 1.1rem var(--serif); letter-spacing: .04em; }
 .package-foot .btn { width: 100%; padding-inline: 14px; }
 .package-back { align-self: flex-start; padding: 0; border: 0; background: none; color: var(--rust); font: 700 .7rem var(--sans); letter-spacing: .1em; text-transform: uppercase; text-decoration: underline; cursor: pointer; }
 .package-back[hidden] { display: none; }
@@ -575,7 +574,7 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .package-extras { color: rgba(245, 239, 227, .82); font-size: .84rem; }
 .package-extras p { margin: 0 0 6px; }
 .package-extras strong { color: var(--tan); }
-.package-panel.has-selection .package-panel-sub, .package-panel.has-selection .package-extras p:not(.package-contact) { display: none; }
+.package-panel.has-selection .package-panel-sub, .package-panel.has-selection .package-extras { display: none; }
 
 /* Main photo keeps its natural shape and stays in view while the form is open */
 .cart-grid { align-items: start; grid-template-columns: 1fr 1fr; }

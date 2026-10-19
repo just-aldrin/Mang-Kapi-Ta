@@ -37,6 +37,10 @@ try {
     // Coffee cart: two package cards beside the main photo; the reservation form waits in a hidden holder.
     assert.equal((html.match(/class="package"/g) || []).length, 2);
     assert.match(html, /<div class="inquiry-holder" data-inquiry-holder hidden>/);
+    // No package prices or fee note on the cards, and no "Birthday coffee cart" label.
+    assert.ok(!html.includes('Birthday coffee cart'));
+    assert.ok(!html.includes('class="package-price"'));
+    assert.ok(!html.includes('Add-ons:') && !html.includes('fee is charged'));
     assert.ok(html.indexOf('data-package-panel') < html.indexOf('id="inquiry-form"'));
     // Coffee cart section: main photo, a 12-photo carousel, a viewer with 13 photos, and every image file exists.
     assert.equal((html.match(/class="gallery-item"/g) || []).length, 12);
