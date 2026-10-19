@@ -161,6 +161,12 @@ try {
         assert.ok(Number.isInteger(m.price) && m.price >= 10000, m.slug + ' price');
       }
     }
+    // The Hiligaynon lines stay exactly as printed, with no English reading added beside them.
+    const text = (slug) => MENU.find((x) => x.slug === slug);
+    assert.equal(text('kapi-migliore').note, 'Tam-is nga medyo isog');
+    assert.equal(text('kapi-freddo').note, 'Isog nga medyo tam-is');
+    assert.equal(text('kakaw-kapi').note, 'Salted cacao nga may kapi');
+    for (const slug of ['kapi-migliore', 'kapi-freddo', 'kakaw-kapi']) assert.ok(!/strength|sweetness|with coffee|sweet,|strong,/i.test(text(slug).blurb), slug + ' blurb must not translate the Hiligaynon line');
     // spot checks against the printed menu boards
     const price = (slug, size) => { const m = MENU.find((x) => x.slug === slug); return (size ? m.sizes[size] : m.price) / 100; };
     assert.equal(price('kapi-migliore', 'hx'), 180); assert.equal(price('kapi-migliore', 'px'), 200);
