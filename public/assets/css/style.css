@@ -626,3 +626,5 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .hero { --logo-w: clamp(190px, 56vw, 500px); }
 .hero-logo-img { width: var(--logo-w); }
 .hero h1 .serif-italic.hero-tagline { font-size: calc(var(--logo-w) * .105); }
+.hero h1 .serif-italic.hero-tagline { font-size: calc(var(--logo-w) * .125); }
+.hero .lead { font-size: clamp(.8rem, 2.3vw, .95rem); }
