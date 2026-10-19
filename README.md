@@ -82,7 +82,6 @@ api/                 Serverless endpoints: order, pay, payment-return, webhook, 
 lib/                 Menu, database layer, payments, page templates, illustrations, HTTP helpers
 scripts/             build.mjs (page generator), dev.mjs (local server), test.mjs (end-to-end checks)
 supabase/schema.sql  Database schema to run in your Supabase project
-legacy-php/          The earlier PHP and SQLite version, kept for reference
 ```
 
 ## Security notes
