@@ -13,8 +13,9 @@
   --muted: #6f6355;
   --line: rgba(43, 33, 26, .14);
   --radius: 14px;
-  --serif: "Fraunces", Georgia, serif;
-  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "FF Providence Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --italic: "Fraunces", Georgia, serif; /* italics keep their own typeface */
+  --sans: "FF Providence Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --shadow: 0 18px 40px -18px rgba(26, 22, 18, .55);
 }
 
@@ -30,7 +31,7 @@ h1, h2, h3 { font-family: var(--serif); font-weight: 700; line-height: 1.08; mar
 p { margin: 0 0 1em; }
 .wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
 .narrow { max-width: 760px; }
-.serif-italic { font-family: var(--serif); font-style: italic; font-weight: 400; }
+.serif-italic { font-family: var(--italic); font-style: italic; font-weight: 400; }
 .sr-only, .skip-link:not(:focus) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .skip-link:focus { position: fixed; top: 10px; left: 10px; z-index: 100; background: var(--paper); padding: 10px 14px; border-radius: 8px; }
 :focus-visible { outline: 3px solid var(--tan); outline-offset: 2px; }
@@ -82,18 +83,18 @@ p { margin: 0 0 1em; }
   position: relative; overflow: hidden; color: var(--cream); text-align: center;
   padding: clamp(80px, 13vw, 150px) 0 clamp(90px, 14vw, 160px);
   background:
-    radial-gradient(760px 430px at 50% 52%, rgba(30, 20, 14, .3), transparent 72%),
-    linear-gradient(180deg, rgba(66, 49, 38, .66) 0%, rgba(58, 43, 33, .66) 50%, rgba(40, 30, 23, .88) 100%),
+    radial-gradient(760px 430px at 50% 52%, rgba(52, 32, 20, .46), transparent 72%),
+    linear-gradient(180deg, rgba(116, 79, 52, .54) 0%, rgba(98, 66, 43, .52) 50%, rgba(64, 42, 29, .84) 100%),
     url("/assets/images/hero-1920.jpg") center 55% / cover no-repeat,
-    #3a2b21;
+    #5a3d29;
 }
 @media (max-width: 700px) {
   .hero {
     background:
-      radial-gradient(90% 55% at 50% 50%, rgba(30, 20, 14, .32), transparent 80%),
-      linear-gradient(180deg, rgba(66, 49, 38, .7) 0%, rgba(58, 43, 33, .7) 50%, rgba(40, 30, 23, .9) 100%),
+      radial-gradient(90% 55% at 50% 50%, rgba(52, 32, 20, .5), transparent 80%),
+      linear-gradient(180deg, rgba(116, 79, 52, .58) 0%, rgba(98, 66, 43, .54) 50%, rgba(64, 42, 29, .86) 100%),
       url("/assets/images/hero-900.jpg") center / cover no-repeat,
-      #3a2b21;
+      #5a3d29;
   }
 }
 .hero-logo { width: 80px; height: auto; margin: 0 auto 22px; opacity: .95; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, .45)); }
@@ -416,7 +417,7 @@ table.data th { font-size: .66rem; letter-spacing: .14em; text-transform: upperc
   font-weight: 400; font-style: normal; font-display: swap;
 }
 .hero h1 { font-family: "Chunk Five", var(--serif); font-weight: 400; letter-spacing: .01em; line-height: 1.04; }
-.hero h1 .serif-italic { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: 0; }
+.hero h1 .serif-italic { font-family: var(--italic); font-style: italic; font-weight: 400; letter-spacing: 0; }
 
 /* Hero typewriter: every letter exists from the start (so nothing reflows) and is revealed one by one */
 html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwards; } /* safety net if scripts fail */
@@ -431,3 +432,18 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 /* Hero on the lighter brown overlay: lift the gold accents so they stay readable */
 .hero .eyebrow-light { color: #f6e2bf; text-shadow: 0 1px 12px rgba(40, 24, 14, .45); }
 .hero h1 .serif-italic { color: #f3d9ae; }
+
+/* Site font: FF Providence Sans (regular and bold); italics stay in Fraunces */
+@font-face {
+  font-family: "FF Providence Sans";
+  src: url("/assets/fonts/providence-sans-regular.woff2") format("woff2"), url("/assets/fonts/providence-sans-regular.woff") format("woff");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "FF Providence Sans";
+  src: url("/assets/fonts/providence-sans-bold.woff2") format("woff2"), url("/assets/fonts/providence-sans-bold.woff") format("woff");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* Hero title: dirty white, a little softer than solid. The italic line below keeps its own colour. */
+.hero h1 { color: rgba(228, 221, 207, .84); }
