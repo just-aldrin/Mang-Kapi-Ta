@@ -393,3 +393,17 @@ table.data th { font-size: .66rem; letter-spacing: .14em; text-transform: upperc
   .n-short { display: inline; }
 }
 @media (max-width: 340px) { .hero h1 { font-size: 2.35rem; } }
+
+/* Payment method buttons and the QR Ph panel */
+.btn-line { border-color: var(--forest); color: var(--forest); background: transparent; }
+.btn-line:hover { background: var(--forest); color: var(--cream); }
+.method-hint { font-size: .78rem; color: var(--muted); text-align: center; margin: 8px 0 18px; }
+.qr-panel { text-align: center; }
+.qr-amount { font-size: 1.05rem; margin-bottom: 4px; }
+.qr-amount strong { font: 700 1.6rem var(--serif); }
+.qr-frame { width: fit-content; margin: 12px auto; padding: 14px; background: #fff; border: 1px solid var(--line); border-radius: 18px; }
+.qr-frame img { display: block; width: min(260px, 66vw); height: auto; transition: opacity .3s, filter .3s; }
+.qr-frame img.is-expired { opacity: .2; filter: grayscale(1); }
+.qr-timer { font-size: .88rem; color: var(--muted); }
+.qr-steps { text-align: left; max-width: 340px; margin: 14px auto; padding-left: 1.3em; font-size: .9rem; color: var(--muted); }
+.qr-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }

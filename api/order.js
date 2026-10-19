@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import * as db from '../lib/db.js';
 import { findItem } from '../lib/menu.js';
 import { guardWrite, query, readJson, safeEqual, send } from '../lib/http.js';
-import { paymentsMode, verifyGcash } from '../lib/payments.js';
+import { availableMethods, paymentsMode, verifyPayment } from '../lib/payments.js';
 
 export default async function handler(req, res) {
   try {
@@ -23,7 +23,7 @@ async function getOrder(req, res) {
   // A GCash payment can still be "processing" when the customer returns, and the webhook may be late.
   // Ask the gateway directly so the confirmation page settles on its own.
   if (order.status === 'pending' && order.provider === 'paymongo') {
-    try { order.status = await verifyGcash(order); } catch (err) { console.error('order verify:', err.message); }
+    try { order.status = await verifyPayment(order); } catch (err) { console.error('order verify:', err.message); }
   }
 
   send(res, 200, {
@@ -33,6 +33,7 @@ async function getOrder(req, res) {
     total: order.total,
     provider: order.provider,
     mode: paymentsMode(),
+    methods: await availableMethods(),
     items: (order.items || []).map((i) => ({ name: i.name, price: i.price, qty: i.qty })),
   });
 }

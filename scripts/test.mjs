@@ -43,6 +43,7 @@ try {
     assert.equal(order.total, 44500); // 2 x 130 + 185 pesos
     assert.equal(order.status, 'pending');
     assert.equal(order.mode, 'sandbox');
+    assert.deepEqual(order.methods, ['gcash']); // the simulator offers GCash only
   });
 
   const q = () => new URL(base + redirect).searchParams;

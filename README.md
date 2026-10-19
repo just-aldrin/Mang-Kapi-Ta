@@ -20,7 +20,7 @@ Mang Kapi Ta is a modern coffee brand with a brew bar at SM City Iloilo and turn
 | **Coffee cart showcase** | Featured directly below the hero. Presents the Hinoki Wood Mobile Station and an event inquiry form that stores date, guest count, contact, and venue. |
 | **Postage-stamp menu** | Every menu item is a perforated postage stamp on an airmail-style postcard, with price denomination, postmark, category filter, and hover motion. |
 | **Order cart** | A slide-out cart with quantity controls, persisted in the browser between visits. |
-| **GCash payments** | Checkout, a payment portal, GCash redirect, return verification, and a signed webhook. |
+| **GCash and QR Ph payments** | Checkout, a payment portal, a GCash redirect or a scannable QR Ph code (works from GCash, Maya, or any banking app), automatic status checks, and a signed webhook. Only the methods enabled on your PayMongo account are offered. |
 | **Test mode** | Without a payment key, a simulated GCash screen lets the entire flow be tested without moving money. |
 | **Staff view** | A password-protected page at `/admin` listing orders and event inquiries, with a "mark ready" action. |
 | **Accessibility** | Skip link, keyboard-operable cart, visible focus states, labelled forms, and reduced-motion support. |
@@ -62,15 +62,15 @@ Copy `.env.example` to `.env` locally. On Vercel, add the same names under Proje
 
 ## GCash payment flow
 
-GCash does not offer a public API for individual merchants, so payments run through PayMongo, a licensed Philippine gateway.
+GCash does not offer a public API for individual merchants, so payments run through PayMongo, a licensed Philippine gateway. The checkout offers GCash, QR Ph, or both, depending on which methods are enabled on your PayMongo account.
 
 ```
-Menu -> Cart -> Checkout -> Payment portal -> GCash -> Return check -> Confirmation
-                                                  \-> Webhook (payment.paid) ----/
+Menu -> Cart -> Checkout -> Payment portal -> GCash redirect  or  QR Ph code -> Confirmation
+                                              \-> Status check and webhook (payment.paid) -/
 ```
 
 1. Checkout creates a pending order. Item prices are read from the server-side menu, never from the browser.
-2. The payment portal creates a PayMongo payment and redirects the customer to GCash.
+2. The payment portal creates a PayMongo payment. GCash sends the customer to the GCash app; QR Ph shows a single-use code (valid about 30 minutes) that any bank or e-wallet app, including GCash, can scan. The page watches for the payment and moves on by itself.
 3. An order is marked paid only after PayMongo confirms it, either when the customer returns or through the signed webhook, which also checks that the paid amount matches the order total.
 
 ## Project structure

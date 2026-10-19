@@ -54,6 +54,19 @@ GCash is not available on Individual PayMongo accounts. You need:
 3. **Settings > Payment Methods > Request Activation** next to GCash (account owner only). Review takes about 3 to 7 business days.
 4. Then swap in the **live** secret key (`sk_live_...`), run `setup-webhook.mjs` again with the live key, update `PAYMONGO_WEBHOOK_SECRET`, and redeploy.
 
+### C. Only QR Ph is active (while GCash activation is pending)
+QR Ph works now, before GCash is approved. The customer scans a code with GCash, Maya, or any banking app, so they can still pay from their GCash wallet.
+1. QR Ph needs your **live** key, so every payment is real money. Copy the live secret key (`sk_live_...`) from **Developers > API Keys** in live mode.
+2. Check it (this only reads your account, it never creates a payment with a live key):
+   ```
+   node --env-file=.env scripts/paymongo-check.mjs
+   ```
+   It should list `qrph` as enabled.
+3. Register the live webhook and put its secret in Vercel, as in step B.4.
+4. In Vercel, set `PAYMONGO_SECRET_KEY` to the live key and `PAYMONGO_WEBHOOK_SECRET` to the live webhook secret, then redeploy.
+5. The checkout automatically offers only the methods your account has enabled, so customers will see just **Pay with QR Ph** until GCash is approved. When GCash is approved, both buttons appear with no further changes.
+6. Buy one item yourself with a real payment and confirm it shows as `paid` at `/admin`. Each QR code is single-use, expires after about 30 minutes, and encodes the exact amount. Read PayMongo's QR Ph refund guide before relying on refunds.
+
 ### How a payment is confirmed
 The customer returns from GCash to the order page, which asks PayMongo for the real status every few seconds. The signed webhook is a second, independent confirmation. An order is marked paid only when PayMongo says so and the amount matches.
 

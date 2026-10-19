@@ -251,31 +251,102 @@
   const missing = () => { $$('[data-order-missing]').forEach((el) => { el.hidden = false; }); };
 
   if (PAGE === 'pay') {
+    const orderUrl = `/order?ref=${encodeURIComponent(ref)}&k=${encodeURIComponent(key)}`;
+    const METHODS = {
+      gcash: { label: (t) => `Pay ${t} with GCash`, hint: 'You will be sent to GCash to approve the payment.' },
+      qrph: { label: (t) => `Pay ${t} with QR Ph`, hint: 'Scan with GCash, Maya, or any banking app.' },
+    };
+
     (async () => {
       let order;
       try { order = await fetchOrder(); } catch { return missing(); }
-      if (order.status === 'paid' || order.status === 'fulfilled') return location.replace(`/order?ref=${encodeURIComponent(ref)}&k=${encodeURIComponent(key)}`);
+      if (order.status === 'paid' || order.status === 'fulfilled') return location.replace(orderUrl);
+
+      const total = peso(order.total);
       $('[data-order-sub]').innerHTML = `Order <strong>${esc(order.ref)}</strong> for ${esc(order.name)}.`;
       $('[data-summary-lines]').innerHTML = lineItems(order.items);
-      $('[data-summary-total]').textContent = peso(order.total);
-      $('[data-pay-note]').textContent = `You will be redirected to GCash to approve ${peso(order.total)}.`;
-      $('[data-pay-button]').textContent = `Pay ${peso(order.total)} with GCash`;
+      $('[data-summary-total]').textContent = total;
       $('[data-test-notice]').hidden = order.mode !== 'sandbox';
+
+      const list = $('[data-method-buttons]');
+      const errBox = $('[data-pay-error]');
+      const qrPanel = $('[data-qr-panel]');
+      const setButtons = (disabled) => $$('[data-method]', list).forEach((b) => { b.disabled = disabled; });
+      let countdown = null;
+      let pollTimer = null;
+      const stopWatching = () => { clearInterval(countdown); clearTimeout(pollTimer); };
+
+      const methods = (order.methods || []).filter((m) => METHODS[m]);
+      list.innerHTML = (methods.length ? methods : ['gcash']).map((m, i) => `
+        <button class="btn ${i === 0 ? 'btn-dark' : 'btn-line'} btn-block" type="button" data-method="${m}">${esc(METHODS[m].label(total))}</button>
+        <p class="method-hint">${esc(METHODS[m].hint)}</p>`).join('');
       $('[data-pay-grid]').hidden = false;
 
-      $('[data-pay-button]').addEventListener('click', async (e) => {
-        const btn = e.currentTarget;
-        const errBox = $('[data-pay-error]');
+      const expire = () => {
+        stopWatching();
+        $('[data-qr-img]').classList.add('is-expired');
+        $('[data-qr-live]').hidden = true;
+        $('[data-qr-expired]').hidden = false;
+      };
+
+      function showQr(out) {
+        const img = $('[data-qr-img]');
+        img.src = out.qr;
+        img.classList.remove('is-expired');
+        $('[data-qr-amount]').textContent = total;
+        $('[data-qr-live]').hidden = false;
+        $('[data-qr-expired]').hidden = true;
+        list.hidden = true;
+        qrPanel.hidden = false;
+
+        const timer = $('[data-qr-timer]');
+        const tick = () => {
+          const s = Math.max(0, Math.round((out.expiresAt - Date.now()) / 1000));
+          timer.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+          if (s === 0) expire();
+        };
+        tick();
+        countdown = setInterval(tick, 1000);
+
+        // Ask the server every 3 seconds; it checks with PayMongo and flips when the payment lands.
+        const poll = async () => {
+          try {
+            const o = await fetchOrder();
+            if (o.status === 'paid' || o.status === 'fulfilled') { stopWatching(); return (location.href = orderUrl); }
+            if (o.status === 'failed') return expire();
+          } catch { /* try again on the next tick */ }
+          pollTimer = setTimeout(poll, 3000);
+        };
+        pollTimer = setTimeout(poll, 3000);
+      }
+
+      async function start(method) {
         errBox.hidden = true;
-        btn.disabled = true;
+        stopWatching();
+        setButtons(true);
         try {
-          const out = await api('pay', { ref, k: key });
-          location.href = out.redirect;
+          const out = await api('pay', { ref, k: key, method });
+          if (out.redirect) { location.href = out.redirect; return; }
+          showQr(out);
         } catch (err) {
           errBox.textContent = err.message;
           errBox.hidden = false;
-          btn.disabled = false;
+          list.hidden = false;
+          qrPanel.hidden = true;
+          setButtons(false);
         }
+      }
+
+      list.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-method]');
+        if (btn) start(btn.dataset.method);
+      });
+      $('[data-qr-new]').addEventListener('click', () => start('qrph'));
+      $('[data-qr-back]').addEventListener('click', () => {
+        stopWatching();
+        qrPanel.hidden = true;
+        list.hidden = false;
+        setButtons(false);
       });
     })();
   }
@@ -291,8 +362,8 @@
       $('[data-status-text]').textContent = paid
         ? `Thank you, ${order.name}. Your order is being prepared.`
         : failed
-          ? 'The GCash payment was cancelled or did not go through. Nothing was charged.'
-          : 'We are confirming your payment with GCash. This page updates by itself, so please keep it open.';
+          ? 'The payment was cancelled, expired, or did not go through. Nothing was charged.'
+          : 'We are confirming your payment. This page updates by itself, so please keep it open.';
       $('[data-order-ref]').textContent = order.ref;
       $('[data-test-notice]').hidden = !(paid && order.provider === 'sandbox');
       $('[data-summary-lines]').innerHTML = lineItems(order.items);
@@ -302,7 +373,7 @@
       const action = $('[data-order-action]');
       if (paid) { action.textContent = 'Order something else'; action.href = '/#menu'; }
       else {
-        action.textContent = failed ? 'Try GCash again' : 'Back to payment';
+        action.textContent = failed ? 'Try paying again' : 'Back to payment';
         action.href = `/pay?ref=${encodeURIComponent(ref)}&k=${encodeURIComponent(key)}`;
       }
       if (paid) { cart = {}; save(); render(); }
