@@ -854,19 +854,33 @@
 
       const caret = document.createElement('span');
       caret.className = 'tw-caret';
-      // Milliseconds per letter, set on the element (a short line reads better a little slower).
-      const speed = Number(tw.closest('[data-typewriter]')?.dataset.typewriterSpeed) || 38;
+      const host = tw.closest('[data-typewriter]');
+      // Milliseconds per letter (a short line reads better a little slower), and how long the finished line stays up.
+      const speed = Number(host?.dataset.typewriterSpeed) || 38;
+      const HOLD = 3600;
       let i = 0;
-      const step = () => {
-        if (i >= chars.length) { setTimeout(() => caret.remove(), 2500); return; }
+      let onScreen = true;
+      if ('IntersectionObserver' in window) new IntersectionObserver((e) => { onScreen = e[0].isIntersecting; }).observe(host);
+      // The loop waits while the hero is scrolled out of view or the tab is in the background.
+      const later = (fn, ms) => setTimeout(() => (onScreen && !document.hidden ? fn() : later(fn, 400)), ms);
+
+      // Type the line, hold it for a few seconds, rub it out letter by letter, then start over, so nobody misses it.
+      function type() {
+        if (i >= chars.length) { later(erase, HOLD); return; }
         const c = chars[i++];
         c.classList.add('on');
         c.after(caret);
-        // a steady pace, with a short breath at punctuation
         const ch = c.textContent;
-        setTimeout(step, ',;'.includes(ch) ? speed * 6 : '.!?'.includes(ch) ? speed * 10 : speed);
-      };
-      setTimeout(step, 600);
+        const last = i === chars.length;
+        later(type, !last && ',;'.includes(ch) ? speed * 6 : !last && '.!?'.includes(ch) ? speed * 10 : speed);
+      }
+      function erase() {
+        if (i <= 0) { later(type, 800); return; }
+        chars[--i].classList.remove('on');
+        if (i > 0) chars[i - 1].after(caret); else chars[0].before(caret);
+        later(erase, Math.max(22, speed * 0.4));
+      }
+      later(type, 600);
     }
   }
 

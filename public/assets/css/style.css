@@ -621,3 +621,8 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .hero .eyebrow-light { font-size: clamp(.58rem, 1.9vw, .72rem); letter-spacing: clamp(.1em, .5vw, .22em); }
 .lead { max-width: 600px; margin: clamp(14px, 3vw, 24px) auto clamp(22px, 4vw, 34px); font-size: clamp(.92rem, 2.7vw, 1.1rem); }
 .hero-actions .btn { padding: clamp(11px, 2.4vw, 14px) clamp(18px, 4vw, 26px); font-size: clamp(.66rem, 1.9vw, .78rem); }
+
+/* The tagline is sized from the logo, so it can never be wider than the logo at any screen size. */
+.hero { --logo-w: clamp(190px, 56vw, 500px); }
+.hero-logo-img { width: var(--logo-w); }
+.hero h1 .serif-italic.hero-tagline { font-size: calc(var(--logo-w) * .105); }
