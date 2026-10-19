@@ -82,17 +82,17 @@ p { margin: 0 0 1em; }
   position: relative; overflow: hidden; color: var(--cream); text-align: center;
   padding: clamp(80px, 13vw, 150px) 0 clamp(90px, 14vw, 160px);
   background:
-    radial-gradient(900px 420px at 50% 0%, rgba(201, 162, 122, .18), transparent 70%),
-    linear-gradient(180deg, rgba(20, 16, 13, .72) 0%, rgba(26, 22, 18, .66) 45%, rgba(26, 22, 18, .9) 100%),
+    radial-gradient(900px 420px at 50% 0%, rgba(214, 170, 124, .22), transparent 70%),
+    linear-gradient(180deg, rgba(122, 84, 56, .72) 0%, rgba(104, 70, 46, .72) 50%, rgba(66, 44, 30, .88) 100%),
     url("/assets/images/hero-1920.jpg") center 55% / cover no-repeat,
-    #14100d;
+    #6a4730;
 }
 @media (max-width: 700px) {
   .hero {
     background:
-      linear-gradient(180deg, rgba(20, 16, 13, .74) 0%, rgba(26, 22, 18, .7) 45%, rgba(26, 22, 18, .92) 100%),
+      linear-gradient(180deg, rgba(122, 84, 56, .74) 0%, rgba(104, 70, 46, .74) 50%, rgba(66, 44, 30, .9) 100%),
       url("/assets/images/hero-900.jpg") center / cover no-repeat,
-      #14100d;
+      #6a4730;
   }
 }
 .hero-logo { width: 80px; height: auto; margin: 0 auto 22px; opacity: .95; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, .45)); }
@@ -103,7 +103,7 @@ p { margin: 0 0 1em; }
 .hero-inner { position: relative; z-index: 1; }
 .hero h1 { font-size: clamp(2.8rem, 8vw, 5.6rem); }
 .hero h1 .serif-italic { display: block; color: var(--tan); font-size: .86em; margin-top: 4px; }
-.lead { max-width: 620px; margin: 26px auto 34px; color: rgba(245, 239, 227, .82); font-size: 1.05rem; }
+.lead { max-width: 620px; margin: 26px auto 34px; color: rgba(250, 245, 235, .94); font-size: 1.05rem; }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .hero-steam { position: absolute; left: 50%; bottom: 0; width: 220px; height: 180px; transform: translateX(-50%); z-index: 0; pointer-events: none; }
 .hero-steam i { position: absolute; bottom: 0; width: 6px; height: 120px; border-radius: 6px; background: linear-gradient(to top, rgba(201, 162, 122, .0), rgba(201, 162, 122, .35)); filter: blur(5px); animation: rise 5s infinite ease-in-out; }
@@ -426,3 +426,7 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .tw-caret { display: inline-block; position: relative; width: 0; height: 1em; vertical-align: baseline; }
 .tw-caret::after { content: ""; position: absolute; left: 1px; top: .1em; width: 2px; height: 1.1em; background: var(--tan); animation: tw-blink 1s steps(1) infinite; }
 @keyframes tw-blink { 50% { opacity: 0; } }
+
+/* Hero on the lighter brown overlay: lift the gold accents so they stay readable */
+.hero .eyebrow-light { color: #f6e2bf; text-shadow: 0 1px 12px rgba(40, 24, 14, .45); }
+.hero h1 .serif-italic { color: #f3d9ae; }
