@@ -34,8 +34,11 @@ try {
     assert.equal((html.match(/data-add=/g) || []).length, 0);
     assert.equal((html.match(/data-d-add/g) || []).length, 1);
     assert.ok(html.includes("<dialog class=\"drink\""));
-    // The typewriter sentence is also present as plain text for screen readers and no-script visitors.
-    assert.match(html, /<p class="lead" data-typewriter><span class="sr-only">Rooted in the warm/);
+    // The typed line is the tagline (also present as plain text for screen readers and no-script visitors).
+    // The sub text under it is ordinary, static text.
+    assert.match(html, /<span class="serif-italic hero-tagline" data-typewriter data-typewriter-speed="\d+"><span class="sr-only">Worth Every Sip\.<\/span>/);
+    assert.match(html, /<p class="lead">Rooted in the warm/);
+    assert.equal((html.match(/data-typewriter(?!-)/g) || []).length, 1);
     // Hero: the logo replaces the written title (its words live in the image's alt text).
     assert.ok(html.includes('src="/assets/images/main-hero-logo.png"'));
     assert.ok(!html.includes('<h1>Mang Kapi Ta.'));

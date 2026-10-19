@@ -854,15 +854,17 @@
 
       const caret = document.createElement('span');
       caret.className = 'tw-caret';
+      // Milliseconds per letter, set on the element (a short line reads better a little slower).
+      const speed = Number(tw.closest('[data-typewriter]')?.dataset.typewriterSpeed) || 38;
       let i = 0;
       const step = () => {
         if (i >= chars.length) { setTimeout(() => caret.remove(), 2500); return; }
         const c = chars[i++];
         c.classList.add('on');
         c.after(caret);
-        // about 26 letters a second, with a short breath at punctuation
+        // a steady pace, with a short breath at punctuation
         const ch = c.textContent;
-        setTimeout(step, ',;'.includes(ch) ? 240 : '.!?'.includes(ch) ? 380 : 38);
+        setTimeout(step, ',;'.includes(ch) ? speed * 6 : '.!?'.includes(ch) ? speed * 10 : speed);
       };
       setTimeout(step, 600);
     }

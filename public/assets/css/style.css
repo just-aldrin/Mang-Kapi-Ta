@@ -613,3 +613,11 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .opt input:focus-visible + .opt-body { outline: 3px solid var(--tan); outline-offset: 2px; }
 .line-detail { grid-column: 1 / -1; margin-top: -2px; font-size: .78rem; color: var(--muted); }
 .filters { max-width: 880px; margin-inline: auto; }
+
+/* Hero text scales with the screen. The tagline is the typed line; the sub text is plain and static. */
+.hero { padding: clamp(56px, 11vw, 150px) 0 clamp(64px, 12vw, 160px); }
+.hero-logo-img { width: clamp(190px, 56vw, 500px); margin-bottom: clamp(4px, 1.2vw, 12px); }
+.hero h1 .serif-italic.hero-tagline { font-size: clamp(1.25rem, 5.2vw, 2.4rem); line-height: 1.15; margin-top: 0; }
+.hero .eyebrow-light { font-size: clamp(.58rem, 1.9vw, .72rem); letter-spacing: clamp(.1em, .5vw, .22em); }
+.lead { max-width: 600px; margin: clamp(14px, 3vw, 24px) auto clamp(22px, 4vw, 34px); font-size: clamp(.92rem, 2.7vw, 1.1rem); }
+.hero-actions .btn { padding: clamp(11px, 2.4vw, 14px) clamp(18px, 4vw, 26px); font-size: clamp(.66rem, 1.9vw, .78rem); }
