@@ -523,3 +523,10 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
   .cart-main { aspect-ratio: auto; min-height: 0; }
   .cart-main-btn { min-height: min(105vw, 520px); }
 }
+
+/* Endless auto-scrolling carousel: free scrolling, no snap points, no scrollbar */
+.gallery-track { scroll-snap-type: none; scroll-behavior: auto; scrollbar-width: none; }
+.gallery-track::-webkit-scrollbar { display: none; }
+.gallery-item { scroll-snap-align: none; }
+/* The main photo is landscape */
+@media (max-width: 900px) { .cart-main-btn { flex: none; min-height: 0; aspect-ratio: 3 / 2; } }

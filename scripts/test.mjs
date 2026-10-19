@@ -35,6 +35,7 @@ try {
     // Coffee cart section: main photo, a 12-photo carousel, a viewer with 13 photos, and every image file exists.
     assert.equal((html.match(/class="gallery-item"/g) || []).length, 12);
     assert.ok(html.includes("cart/main.jpg"));
+    assert.ok(html.indexOf('class="packages"') < html.indexOf('data-gallery')); // packages come before the carousel
     const data = JSON.parse(html.match(/<script type="application\/json" id="gallery-data">([^<]+)<\/script>/)[1]);
     assert.equal(data.length, 13);
     assert.ok(html.includes('id="lightbox"'));

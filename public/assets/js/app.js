@@ -498,11 +498,7 @@
     document.body.style.overflow = '';
     lbFocus?.focus?.({ preventScroll: true });
     // keep the carousel in step with the last photo viewed
-    const item = lbIndex > 0 ? $$('.gallery-item')[lbIndex - 1] : null;
-    if (item) {
-      const track = item.parentElement;
-      track.scrollTo({ left: item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2, behavior: 'auto' });
-    }
+    if (lbIndex > 0) document.dispatchEvent(new CustomEvent('gallery:show', { detail: lbIndex - 1 }));
   });
   lb?.addEventListener('click', (e) => { if (e.target === lb) lbClose(); }); // click outside the photo
   lb?.addEventListener('keydown', (e) => {
@@ -538,73 +534,143 @@
     const PLAY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
     const PAUSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
 
-    // One step is about 80% of the visible width; at either end it wraps around to the other.
-    function step(dir) {
-      const max = track.scrollWidth - track.clientWidth;
-      let to = track.scrollLeft + dir * track.clientWidth * 0.8;
-      if (dir > 0 && track.scrollLeft >= max - 4) to = 0;
-      else if (dir < 0 && track.scrollLeft <= 4) to = max;
-      track.scrollTo({ left: to, behavior: 'smooth' });
-    }
+    // Endless loop: three copies of the photos sit side by side and the middle copy is the real one.
+    // Whenever the view drifts into the first or last copy, it is moved back by exactly one copy's width,
+    // which looks identical, so the carousel can be dragged or scrolled in either direction forever.
+    const originals = $$('.gallery-item', track);
+    const copy = () => {
+      const frag = document.createDocumentFragment();
+      originals.forEach((el) => {
+        const c = el.cloneNode(true);
+        c.classList.add('is-clone');
+        c.setAttribute('aria-hidden', 'true');
+        $$('button', c).forEach((b) => { b.tabIndex = -1; });
+        frag.appendChild(c);
+      });
+      return frag;
+    };
+    const firstOfBefore = (() => { const f = copy(); const first = f.firstElementChild; track.prepend(f); return first; })();
+    track.append(copy());
 
-    // Autoplay: on by default, paused while hovered, focused, off-screen, or while a photo is open.
-    // Any manual interaction switches it off; the play button turns it back on.
+    let setW = 0; // width of one copy of the photos
+    let pos = 0; // scroll position, kept as a fraction because browsers round scrollLeft
+    const measure = () => { setW = originals[0].offsetLeft - firstOfBefore.offsetLeft; };
+
+    let smoothUntil = 0; // while a button-driven smooth scroll runs, do not re-wrap under it
+    function wrap() {
+      if (!setW || performance.now() < smoothUntil) return;
+      if (pos >= 2 * setW) { pos -= setW; track.scrollLeft = pos; }
+      else if (pos < setW) { pos += setW; track.scrollLeft = pos; }
+    }
+    function start() { measure(); pos = setW; track.scrollLeft = pos; }
+    start();
+    window.addEventListener('resize', () => { const into = (pos - setW) / (setW || 1); measure(); pos = setW + into * setW; track.scrollLeft = pos; });
+
+    // Constant motion. It yields to the visitor: paused while hovering, pressing, focusing with the keyboard,
+    // while a photo is open, off-screen, or in a hidden tab, and it resumes shortly after any manual scroll.
     const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    let timer = null;
-    let paused = false;
+    const SPEED = 45; // pixels per second
+    let userPaused = reduceMotion; // reduced-motion visitors start paused and can press play
+    let hovering = false;
+    let pressed = false;
     let visible = false;
-    function setAuto(on) {
-      clearInterval(timer);
-      playBtn.setAttribute('aria-pressed', String(on));
-      playBtn.setAttribute('aria-label', on ? 'Pause automatic scrolling' : 'Play automatic scrolling');
-      playBtn.innerHTML = on ? PAUSE : PLAY;
-      if (on) timer = setInterval(() => { if (!paused && visible && !document.hidden && !lb?.open) step(1); }, 3800);
-    }
-    new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; }, { threshold: 0.3 }).observe(gallery);
-    gallery.addEventListener('pointerenter', () => { paused = true; });
-    gallery.addEventListener('pointerleave', () => { paused = false; });
-    gallery.addEventListener('focusin', () => { paused = true; });
-    gallery.addEventListener('focusout', () => { paused = false; });
-    const stopAuto = () => setAuto(false);
+    let resumeAt = 0;
+    const holdOff = (ms = 1500) => { resumeAt = Math.max(resumeAt, performance.now() + ms); };
 
-    $('[data-g-prev]', gallery).addEventListener('click', () => { stopAuto(); step(-1); });
-    $('[data-g-next]', gallery).addEventListener('click', () => { stopAuto(); step(1); });
-    playBtn.addEventListener('click', () => setAuto(playBtn.getAttribute('aria-pressed') !== 'true'));
-    track.addEventListener('touchstart', stopAuto, { passive: true });
-    track.addEventListener('wheel', (e) => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) stopAuto(); }, { passive: true });
+    function setPlayIcon() {
+      playBtn.setAttribute('aria-label', userPaused ? 'Play automatic scrolling' : 'Pause automatic scrolling');
+      playBtn.innerHTML = userPaused ? PLAY : PAUSE;
+    }
+    setPlayIcon();
+    playBtn.addEventListener('click', () => { userPaused = !userPaused; setPlayIcon(); });
+
+    let last = 0;
+    function frame(t) {
+      requestAnimationFrame(frame);
+      const dt = Math.min(0.05, (t - (last || t)) / 1000);
+      last = t;
+      wrap();
+      const run = !userPaused && !hovering && !pressed && visible && !document.hidden && !lb?.open && t >= resumeAt;
+      if (run && setW) { pos += SPEED * dt; wrap(); track.scrollLeft = pos; }
+    }
+    requestAnimationFrame(frame);
+
+    // Anything that moves the track other than our own animation counts as the visitor taking over.
+    track.addEventListener('scroll', () => {
+      const x = track.scrollLeft;
+      if (Math.abs(x - pos) > 2) { pos = x; holdOff(); }
+    }, { passive: true });
+
+    new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; }, { threshold: 0.2 }).observe(gallery);
+    gallery.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hovering = true; });
+    gallery.addEventListener('pointerleave', () => { hovering = false; });
+    // Keyboard users get a few quiet seconds after each key press or focus move (and they have the pause button).
+    gallery.addEventListener('focusin', (e) => { if (e.target.matches(':focus-visible')) holdOff(5000); });
+    gallery.addEventListener('keydown', () => holdOff(5000));
+
+    // Buttons and keys: one step is about 80% of the visible width.
+    function step(dir) {
+      holdOff(2500);
+      smoothUntil = performance.now() + 700;
+      track.scrollTo({ left: track.scrollLeft + dir * track.clientWidth * 0.8, behavior: 'smooth' });
+    }
+    $('[data-g-prev]', gallery).addEventListener('click', () => step(-1));
+    $('[data-g-next]', gallery).addEventListener('click', () => step(1));
     track.addEventListener('keydown', (e) => {
-      const keys = { ArrowRight: () => step(1), ArrowLeft: () => step(-1), Home: () => track.scrollTo({ left: 0, behavior: 'smooth' }), End: () => track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' }) };
-      if (keys[e.key]) { keys[e.key](); stopAuto(); e.preventDefault(); }
+      const to = (x) => { holdOff(2500); smoothUntil = performance.now() + 700; track.scrollTo({ left: x, behavior: 'smooth' }); };
+      const keys = {
+        ArrowRight: () => step(1),
+        ArrowLeft: () => step(-1),
+        Home: () => to(setW),
+        End: () => to(2 * setW - track.clientWidth),
+      };
+      if (keys[e.key]) { keys[e.key](); e.preventDefault(); }
     });
+    track.addEventListener('wheel', () => holdOff(), { passive: true });
+    track.addEventListener('touchstart', () => { pressed = true; }, { passive: true });
+    const touchDone = () => { pressed = false; holdOff(2200); }; // leave time for the swipe to coast
+    track.addEventListener('touchend', touchDone, { passive: true });
+    track.addEventListener('touchcancel', touchDone, { passive: true });
 
     // Drag with the mouse (touch screens already scroll natively). A drag never counts as a click.
     let dragging = false;
-    let startX = 0;
-    let startLeft = 0;
+    let lastX = 0;
     let moved = 0;
     let suppressClick = false;
     track.addEventListener('pointerdown', (e) => {
       if (e.pointerType !== 'mouse' || e.button !== 0) return;
-      dragging = true; moved = 0; startX = e.clientX; startLeft = track.scrollLeft;
-      stopAuto();
+      dragging = true; pressed = true; moved = 0; lastX = e.clientX;
     });
     window.addEventListener('pointermove', (e) => {
       if (!dragging) return;
-      const dx = e.clientX - startX;
-      moved = Math.max(moved, Math.abs(dx));
+      const dx = e.clientX - lastX;
+      lastX = e.clientX;
+      moved += Math.abs(dx);
       if (moved > 6) track.classList.add('dragging');
-      track.scrollLeft = startLeft - dx;
+      track.scrollLeft -= dx;
+      pos = track.scrollLeft;
+      wrap();
     });
     window.addEventListener('pointerup', () => {
       if (!dragging) return;
       dragging = false;
+      pressed = false;
+      holdOff(1800);
       track.classList.remove('dragging');
       suppressClick = moved > 6;
       setTimeout(() => { suppressClick = false; }, 60);
     });
     track.addEventListener('click', (e) => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; } }, true);
 
-    setAuto(!reduceMotion);
+    // After closing the photo viewer, bring that photo back into the middle of the carousel.
+    document.addEventListener('gallery:show', (e) => {
+      const item = originals[e.detail];
+      if (!item) return;
+      const pad = parseFloat(getComputedStyle(track).paddingLeft) || 0;
+      pos = pad + (item.offsetLeft - originals[0].offsetLeft) + setW - (track.clientWidth - item.offsetWidth) / 2;
+      track.scrollLeft = pos;
+      holdOff(2500);
+    });
   }
 
   /* ---------- hero typewriter ---------- */
