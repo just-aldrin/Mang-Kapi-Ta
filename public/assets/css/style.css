@@ -566,10 +566,6 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .extra { display: grid; grid-template-columns: 1fr 110px; gap: 2px 12px; align-items: center; margin: 10px 0 0; font-size: .9rem; letter-spacing: 0; text-transform: none; color: var(--ink); font-weight: 400; }
 .extra small { grid-column: 1; }
 .extra input { grid-column: 2; grid-row: 1 / span 2; margin: 0; }
-.estimate { margin: 0 0 14px; padding: 12px 14px; border: 1px solid #dcc98c; border-radius: 12px; background: #f1e7c8; font-size: .95rem; }
-.estimate:empty { display: none; }
-.estimate strong { font: 700 1.3rem var(--serif); color: var(--rust-dark); }
-.estimate small { display: block; margin-top: 2px; color: var(--muted); font-size: .76rem; }
 
 /* Main photo keeps its natural shape and stays in view while the form is open */
 .cart-grid { align-items: start; grid-template-columns: 1fr 1fr; }
@@ -585,3 +581,18 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 
 /* Hero: the logo replaces the written title */
 .hero-logo-img { display: block; width: clamp(260px, 46vw, 540px); height: auto; margin: 0 auto 10px; filter: drop-shadow(0 6px 22px rgba(30, 18, 10, .5)); }
+
+/* The open form is never taller than the main photo: the card keeps its header and the form scrolls inside it */
+.package-panel.has-selection .package-panel-head { display: none; }
+.package.is-selected .package-foot { display: none; }
+@media (min-width: 901px) {
+  .package.is-selected { max-height: calc(var(--cart-main-h, 560px) - 38px); }
+  .package.is-selected .package-form { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-right: 8px; margin-right: -8px; scrollbar-width: thin; scrollbar-color: var(--rust) transparent; overscroll-behavior: contain; }
+  .package.is-selected .package-form::-webkit-scrollbar { width: 6px; }
+  .package.is-selected .package-form::-webkit-scrollbar-thumb { background: var(--rust); border-radius: 6px; }
+}
+.field-note { display: block; min-height: 0; margin-top: 4px; color: #b3402f; font-size: .78rem; letter-spacing: 0; text-transform: none; font-weight: 600; }
+.field-note:empty { display: none; }
+.pill.new { background: #f1e1a8; color: #6b5200; }
+.pill.confirmed { background: #cfe0b0; color: #2f4a14; }
+.pill.declined { background: #f0c7bd; color: #7d2a1c; }

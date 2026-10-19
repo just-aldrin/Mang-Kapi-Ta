@@ -189,28 +189,37 @@
   /* ---------- coffee cart packages: choosing one opens the reservation form inside it ---------- */
   const inquiry = $('#inquiry-form');
   const panel = $('[data-package-panel]');
-  const packageData = JSON.parse($('#package-data')?.textContent || 'null');
-  const pesoWhole = (n) => '₱' + Number(n).toLocaleString('en-PH');
 
-  // Live estimate: package price + add-ons + extra cups + the transportation fee (the team confirms the final quote).
-  function estimate() {
-    if (!inquiry || !packageData) return;
-    const box = $('[data-estimate]', inquiry);
-    const pkg = packageData.packages.find((p) => p.id === inquiry.elements.package.value);
-    if (!pkg) { box.textContent = ''; return; }
-    const extra = Math.max(0, Math.min(500, Math.floor(Number(inquiry.elements.extra_cups.value) || 0)));
-    const addOns = packageData.addOns.filter((a) => inquiry.elements['addon_' + a.id].checked);
-    const total = pkg.price + addOns.reduce((sum, a) => sum + a.price, 0) + extra * packageData.extraCup + packageData.transport;
-    box.innerHTML = `Estimated total <strong>${pesoWhole(total)}</strong><small>Includes ${pesoWhole(packageData.transport)} for transportation and logistics. We confirm the final quote with you.</small>`;
+  // Dates other customers already hold. The server makes the final decision; this only warns early.
+  const DATE_TAKEN = 'That date is already reserved. Please choose another date.';
+  let bookedDates = new Set();
+  async function loadBookedDates() {
+    try { bookedDates = new Set((await api('booked-dates')).dates || []); } catch { /* the server still checks on submit */ }
   }
-  inquiry?.addEventListener('input', estimate);
-  inquiry?.addEventListener('change', estimate);
+  function checkDate() {
+    const input = inquiry?.elements.event_date;
+    const note = inquiry && $('[data-date-note]', inquiry);
+    if (!input || !note) return true;
+    const taken = Boolean(input.value) && bookedDates.has(input.value);
+    note.textContent = taken ? DATE_TAKEN : '';
+    input.classList.toggle('invalid', taken);
+    input.setAttribute('aria-invalid', String(taken));
+    return !taken;
+  }
+  inquiry?.elements.event_date.addEventListener('input', checkDate);
+  inquiry?.elements.event_date.addEventListener('change', checkDate);
 
   if (panel && inquiry) {
     const cards = $$('.package', panel);
     const holder = $('[data-inquiry-holder]');
+    const photo = $('.cart-main');
     let current = null;
     let token = 0;
+
+    // The open form is never taller than the main photo; anything longer scrolls inside the card.
+    if (photo && 'ResizeObserver' in window) {
+      new ResizeObserver(() => panel.style.setProperty('--cart-main-h', photo.offsetHeight + 'px')).observe(photo);
+    }
 
     function choose(id) {
       const card = cards.find((c) => c.dataset.package === id);
@@ -231,7 +240,7 @@
       $('[data-inquiry-submit]', inquiry).textContent = `Send reservation for ${card.dataset.name}`;
       $('[data-package-form]', card).append(inquiry);
       say($('[data-inquiry-msg]', inquiry), '', true);
-      estimate();
+      loadBookedDates().then(checkDate);
       card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       setTimeout(() => { if (token === mine) $('input[name="name"]', inquiry).focus({ preventScroll: true }); }, 350);
     }
@@ -269,6 +278,7 @@
     const msg = $('[data-inquiry-msg]', inquiry);
     const btn = $('[data-inquiry-submit]', inquiry);
     const f = inquiry.elements;
+    if (!checkDate()) { say(msg, DATE_TAKEN, false); return; }
     const payload = {
       name: f.name.value, event_date: f.event_date.value, guests: f.guests.value, contact: f.contact.value, venue: f.venue.value,
       package: f.package.value,
@@ -283,9 +293,14 @@
       const chosen = f.package.value;
       inquiry.reset();
       f.package.value = chosen; // stay on the chosen package
-      estimate();
-    } catch (err) { say(msg, err.message, false); }
+      await loadBookedDates(); // the date just sent is now held
+      checkDate();
+    } catch (err) {
+      say(msg, err.message, false);
+      if (err.status === 409) { await loadBookedDates(); checkDate(); } // someone took the date a moment ago
+    }
     btn.disabled = false;
+    msg.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); // the form scrolls inside its card
   });
 
   /* ---------- newsletter ---------- */
@@ -505,6 +520,12 @@
   if (PAGE === 'admin') {
     const showLogin = () => { $('[data-admin-panel]').hidden = true; $('[data-admin-login]').hidden = false; };
     const when = (iso) => (iso ? new Date(iso).toLocaleString('en-PH') : '');
+    // Confirm keeps a date; decline frees it for someone else.
+    const inquiryActions = (q) => {
+      if (q.status === 'declined') return '';
+      const confirm = q.status === 'confirmed' ? '' : `<button class="btn btn-dark" style="padding:8px 14px" data-inq="${q.id}" data-to="confirmed">Confirm</button> `;
+      return `${confirm}<button class="btn btn-line" style="padding:8px 14px" data-inq="${q.id}" data-to="declined">Decline</button>`;
+    };
 
     async function loadAdmin() {
       try {
@@ -523,8 +544,8 @@
             <td>${o.status === 'paid' ? `<button class="btn btn-dark" style="padding:8px 14px" data-fulfil="${esc(o.ref)}">Mark ready</button>` : ''}</td>
           </tr>`).join('') || '<tr><td colspan="7">No orders yet.</td></tr>';
         $('[data-admin-inquiries]').innerHTML = data.inquiries.map((q) => `
-          <tr><td>${esc(q.name)}</td><td>${esc(q.event_date)}</td><td>${esc(q.guests)}</td><td>${esc(q.contact)}</td><td>${esc(q.venue)}</td><td>${esc(q.package_summary || '')}</td><td>${esc(when(q.created_at))}</td></tr>`).join('')
-          || '<tr><td colspan="7">No inquiries yet.</td></tr>';
+          <tr><td>${esc(q.name)}</td><td>${esc(q.event_date)}</td><td>${esc(q.guests)}</td><td>${esc(q.contact)}</td><td>${esc(q.venue)}</td><td>${esc(q.package_summary || '')}</td><td><span class="pill ${esc(q.status || 'new')}">${esc(q.status || 'new')}</span></td><td>${esc(when(q.created_at))}</td><td>${inquiryActions(q)}</td></tr>`).join('')
+          || '<tr><td colspan="9">No inquiries yet.</td></tr>';
       } catch (err) {
         if (err.status === 404) $('[data-admin-disabled]').hidden = false;
         else showLogin();
@@ -542,6 +563,14 @@
     });
     $('[data-admin-logout]').addEventListener('click', async () => { await api('admin', { action: 'logout' }).catch(() => {}); showLogin(); });
     document.addEventListener('click', async (e) => {
+      const inq = e.target.closest('[data-inq]');
+      if (inq) {
+        inq.disabled = true;
+        try { await api('admin', { action: 'inquiry-status', id: Number(inq.dataset.inq), status: inq.dataset.to }); }
+        catch (err) { window.alert(err.message); }
+        loadAdmin();
+        return;
+      }
       const b = e.target.closest('[data-fulfil]');
       if (!b) return;
       b.disabled = true;

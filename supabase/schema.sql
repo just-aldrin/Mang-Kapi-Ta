@@ -37,6 +37,7 @@ create table if not exists public.inquiries (
   contact    text not null,
   venue      text not null,
   package_summary text,                 -- package, add-ons and estimated total chosen on the website
+  status     text not null default 'new' check (status in ('new', 'confirmed', 'declined')),  -- declined frees the date
   created_at timestamptz not null default now()
 );
 
@@ -62,3 +63,10 @@ revoke all on public.orders, public.order_items, public.inquiries, public.subscr
 -- Already ran this file before packages were added? Run just this line once in the SQL Editor.
 -- (Until you do, the website still saves inquiries and keeps the package details in the venue text.)
 alter table public.inquiries add column if not exists package_summary text;
+
+-- One event per day: the website refuses a date that another inquiry already holds ("new" or "confirmed").
+-- Declining an inquiry on the staff page frees its date. Already created the table? Run this once:
+alter table public.inquiries add column if not exists status text not null default 'new';
+alter table public.inquiries drop constraint if exists inquiries_status_check;
+alter table public.inquiries add constraint inquiries_status_check check (status in ('new', 'confirmed', 'declined'));
+-- Until you run it, every inquiry counts as holding its date and the Confirm / Decline buttons are unavailable.

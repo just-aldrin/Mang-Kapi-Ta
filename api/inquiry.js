@@ -34,6 +34,10 @@ export default async function handler(req, res) {
       if (!priced) return send(res, 422, { error: 'Please choose one of the listed packages.' });
     }
 
+    if (await db.isDateTaken(eventDate)) {
+      return send(res, 409, { error: 'That date is already reserved. Please choose another date.' });
+    }
+
     await db.createInquiry({
       name: name.slice(0, 120),
       event_date: eventDate,

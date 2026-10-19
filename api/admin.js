@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     }
 
     if (!guardWrite(req, res)) return;
-    const { action = '', password = '', ref = '' } = (await readJson(req)) || {};
+    const { action = '', password = '', ref = '', id = 0, status = '' } = (await readJson(req)) || {};
 
     if (action === 'login') {
       if (!safeEqual(String(password), process.env.ADMIN_PASSWORD)) {
@@ -28,6 +28,16 @@ export default async function handler(req, res) {
     if (!isAdmin(req)) return send(res, 401, { error: 'Sign in required.' });
     if (action === 'fulfil') {
       await db.markFulfilled(String(ref));
+      return send(res, 200, { ok: true });
+    }
+    if (action === 'inquiry-status') {
+      if (!Number.isInteger(id) || id < 1 || !['confirmed', 'declined'].includes(status)) return send(res, 400, { error: 'Invalid request.' });
+      try {
+        if (!(await db.setInquiryStatus(id, status))) return send(res, 404, { error: 'Inquiry not found.' });
+      } catch (err) {
+        if (err.message === 'STATUS_COLUMN_MISSING') return send(res, 409, { error: 'Run the latest database update (supabase/schema.sql) to use this.' });
+        throw err;
+      }
       return send(res, 200, { ok: true });
     }
     send(res, 400, { error: 'Unknown action.' });

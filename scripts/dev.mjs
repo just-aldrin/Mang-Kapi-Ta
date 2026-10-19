@@ -18,6 +18,14 @@ if (existsSync(envFile)) {
   }
 }
 
+// KAPI_MEMORY=1 forces the throwaway in-memory store even when .env holds real database keys.
+// Use it for any test or demo run so nothing is written to the real Supabase project.
+if (process.env.KAPI_MEMORY === '1') {
+  process.env.SUPABASE_URL = '';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = '';
+}
+const usingSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+
 const types = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json',
@@ -49,4 +57,7 @@ http.createServer(async (req, res) => {
   }
   res.setHeader('Content-Type', types[extname(file)] || 'application/octet-stream');
   res.end(readFileSync(file));
-}).listen(port, () => console.log(`Mang Kapi Ta running at http://localhost:${port}`));
+}).listen(port, () => {
+  console.log(`Mang Kapi Ta running at http://localhost:${port}`);
+  console.log(usingSupabase ? 'Database: REAL Supabase project (anything you submit is saved). Set KAPI_MEMORY=1 for a throwaway store.' : 'Database: in-memory (throwaway; resets when the server stops).');
+});

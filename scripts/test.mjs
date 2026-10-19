@@ -16,6 +16,7 @@ const json = (path, body, headers = {}) =>
   fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) });
 
 const goodOrder = { name: 'Test Buyer', email: 't@example.com', phone: '0917 123 4567', order_type: 'pickup', notes: '' };
+const day = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10); // YYYY-MM-DD, n days from now
 let passed = 0;
 const check = async (name, fn) => { await fn(); passed++; console.log(`ok  ${name}`); };
 
@@ -117,16 +118,48 @@ try {
   });
 
   await check('inquiry and newsletter work and validate', async () => {
-    const date = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
+    const date = day(30);
+    const dateB = day(31);
     assert.equal((await json('/api/inquiry', { name: 'A', event_date: date, guests: '50 - 80 guests', contact: '0917 123 4567', venue: 'Hall' })).status, 200);
     assert.equal((await json('/api/inquiry', { name: 'A', event_date: '2020-01-01', guests: 'x', contact: '0917 123 4567', venue: 'Hall' })).status, 422);
     // With a package: the server prices it (Package B 18,750 + sticker 250 + 20 extra cups at 150 + 1,000 transport = 23,000).
-    const withPackage = await json('/api/inquiry', { name: 'Pkg Host', event_date: date, guests: '80 - 150 guests', contact: '0917 123 4567', venue: 'Garden', package: 'b', addon_sticker: true, addon_signature: false, extra_cups: 20, price: 1 });
+    const withPackage = await json('/api/inquiry', { name: 'Pkg Host', event_date: dateB, guests: '80 - 150 guests', contact: '0917 123 4567', venue: 'Garden', package: 'b', addon_sticker: true, addon_signature: false, extra_cups: 20, price: 1 });
     assert.equal(withPackage.status, 200);
     assert.match((await withPackage.json()).message, /Package B/);
     assert.equal((await json('/api/inquiry', { name: 'A', event_date: date, guests: 'x', contact: '0917 123 4567', venue: 'Hall', package: 'nonsense' })).status, 422);
+    // One event per day: a date that is already held is refused, no matter who asks or which package they pick.
+    const again = await json('/api/inquiry', { name: 'Someone Else', event_date: date, guests: '50 - 80 guests', contact: '0918 765 4321', venue: 'Elsewhere', package: 'a' });
+    assert.equal(again.status, 409);
+    assert.match((await again.json()).error, /already reserved/);
+    assert.equal((await json('/api/inquiry', { name: 'Someone Else', event_date: dateB, guests: '50 - 80 guests', contact: '0918 765 4321', venue: 'Elsewhere' })).status, 409);
+    // The public list shows dates only (never names), so the form can warn before sending.
+    const listed = await (await fetch(base + '/api/booked-dates')).json();
+    assert.ok(listed.dates.includes(date) && listed.dates.includes(dateB));
+    assert.ok(!listed.dates.includes(day(60)));
+    assert.ok(!JSON.stringify(listed).includes('Pkg Host'));
+    assert.equal((await fetch(base + '/api/booked-dates', { method: 'POST' })).status, 405);
     assert.equal((await json('/api/subscribe', { email: 'a@b.co' })).status, 200);
     assert.equal((await json('/api/subscribe', { email: 'bad' })).status, 422);
+  });
+
+  await check('staff can confirm or decline an inquiry, and declining frees the date', async () => {
+    const login = await json('/api/admin', { action: 'login', password: 'test-admin-pass' });
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const staff = (body) => json('/api/admin', body, { Cookie: cookie });
+    const list = async () => (await (await fetch(base + '/api/admin', { headers: { Cookie: cookie } })).json()).inquiries;
+    const first = (await list()).find((q) => q.event_date === day(30));
+    assert.equal(first.status, 'new');
+    assert.equal((await staff({ action: 'inquiry-status', id: first.id, status: 'nonsense' })).status, 400);
+    assert.equal((await json('/api/admin', { action: 'inquiry-status', id: first.id, status: 'declined' })).status, 401); // not signed in
+    // Confirming keeps the date taken.
+    assert.equal((await staff({ action: 'inquiry-status', id: first.id, status: 'confirmed' })).status, 200);
+    assert.equal((await list()).find((q) => q.id === first.id).status, 'confirmed');
+    assert.ok((await (await fetch(base + '/api/booked-dates')).json()).dates.includes(day(30)));
+    // Declining frees it, and someone else can then take it.
+    assert.equal((await staff({ action: 'inquiry-status', id: first.id, status: 'declined' })).status, 200);
+    assert.ok(!(await (await fetch(base + '/api/booked-dates')).json()).dates.includes(day(30)));
+    assert.equal((await json('/api/inquiry', { name: 'Next Host', event_date: day(30), guests: '50 - 80 guests', contact: '0918 765 4321', venue: 'Elsewhere' })).status, 200);
+    assert.equal((await staff({ action: 'inquiry-status', id: 999999, status: 'confirmed' })).status, 404);
   });
 
   await check('staff area needs a password and lists orders after login', async () => {
