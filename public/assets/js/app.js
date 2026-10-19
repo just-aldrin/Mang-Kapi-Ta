@@ -2,7 +2,7 @@
   'use strict';
 
   const MENU = window.KAPI_MENU || {};
-  const STORE_KEY = 'kapi-cart-v1';
+  const STORE_KEY = 'kapi-cart-v2';
   const PAGE = document.body.dataset.page;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -14,12 +14,30 @@
   const params = new URLSearchParams(location.search);
 
   /* ---------- cart state ---------- */
+  const SIZES = window.KAPI_SIZES || {};
+  const has = (obj, key) => Object.prototype.hasOwnProperty.call(obj || {}, key);
+
+  // A cart line is one item in one size with one choice, stored as "slug~size~choice" ("-" when not applicable).
+  const lineKey = (slug, size, choice) => `${slug}~${size || '-'}~${choice || '-'}`;
+  function describe(key) {
+    const [slug, rawSize, rawChoice] = String(key).split('~');
+    const item = has(MENU, slug) ? MENU[slug] : null;
+    if (!item) return null;
+    const size = rawSize === '-' ? null : rawSize;
+    const choice = rawChoice === '-' ? null : rawChoice;
+    if (item.sizes ? !(size && has(item.sizes, size)) : size) return null;
+    if (item.choice ? !(choice && item.choice.options.includes(choice)) : choice) return null;
+    const detail = [item.sizes ? `${SIZES[size].label} ${SIZES[size].oz} oz` : null, choice].filter(Boolean).join(' · ');
+    return { item, size, choice, detail, unit: item.sizes ? item.sizes[size] : item.price };
+  }
+  const fullName = (d) => d.item.name + (d.detail ? ` (${d.detail})` : '');
+
   const load = () => {
     try {
       const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
       const clean = {};
-      for (const [slug, qty] of Object.entries(raw)) {
-        if (MENU[slug] && Number.isInteger(qty) && qty > 0) clean[slug] = Math.min(qty, 20);
+      for (const [key, qty] of Object.entries(raw)) {
+        if (describe(key) && Number.isInteger(qty) && qty > 0) clean[key] = Math.min(qty, 20);
       }
       return clean;
     } catch { return {}; }
@@ -27,7 +45,7 @@
   let cart = load();
   const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(cart)); } catch { /* storage unavailable */ } };
   const count = () => Object.values(cart).reduce((a, b) => a + b, 0);
-  const total = () => Object.entries(cart).reduce((a, [s, q]) => a + MENU[s].price * q, 0);
+  const total = () => Object.entries(cart).reduce((sum, [key, qty]) => sum + describe(key).unit * qty, 0);
 
   const drawer = $('#cart-drawer');
   const scrim = $('.drawer-scrim');
@@ -57,45 +75,43 @@
     const entries = Object.entries(cart);
     if (lines) {
       lines.innerHTML = entries.length
-        ? entries.map(([slug, qty]) => `
+        ? entries.map(([key, qty]) => {
+          const d = describe(key);
+          return `
           <div class="line">
-            <span class="line-name">${esc(MENU[slug].name)}</span>
-            <span class="line-price">${peso(MENU[slug].price * qty)}</span>
-            <span class="qty" role="group" aria-label="Quantity for ${esc(MENU[slug].name)}">
-              <button type="button" data-dec="${esc(slug)}" aria-label="Decrease">&minus;</button>
+            <span class="line-name">${esc(d.item.name)}</span>
+            <span class="line-price">${peso(d.unit * qty)}</span>
+            ${d.detail ? `<span class="line-detail">${esc(d.detail)}</span>` : ''}
+            <span class="qty" role="group" aria-label="Quantity for ${esc(fullName(d))}">
+              <button type="button" data-dec="${esc(key)}" aria-label="Decrease">&minus;</button>
               <span>${qty}</span>
-              <button type="button" data-inc="${esc(slug)}" aria-label="Increase">+</button>
+              <button type="button" data-inc="${esc(key)}" aria-label="Increase">+</button>
             </span>
-            <button type="button" class="line-remove" data-remove="${esc(slug)}">Remove</button>
-          </div>`).join('')
+            <button type="button" class="line-remove" data-remove="${esc(key)}">Remove</button>
+          </div>`;
+        }).join('')
         : '<p class="drawer-empty">Your postcard is empty.<br>Affix a few stamps from the menu.</p>';
     }
     const t = $('[data-cart-total]');
     if (t) t.textContent = peso(total());
     const go = $('[data-cart-checkout]');
     if (go) go.classList.toggle('disabled', entries.length === 0);
-    $$('[data-add]').forEach((b) => b.classList.toggle('added', !!cart[b.dataset.add]));
   }
 
-  function change(slug, delta) {
-    if (!MENU[slug]) return;
-    const next = (cart[slug] || 0) + delta;
-    if (next <= 0) delete cart[slug]; else cart[slug] = Math.min(next, 20);
+  function change(key, delta) {
+    if (!describe(key)) return;
+    const next = (cart[key] || 0) + delta;
+    if (next <= 0) delete cart[key]; else cart[key] = Math.min(next, 20);
     save();
     render();
   }
 
+  const bumpCart = () => { const btn = $('.cart-btn'); btn?.classList.remove('bump'); void btn?.offsetWidth; btn?.classList.add('bump'); };
+
   document.addEventListener('click', (e) => {
     const t = e.target.closest('button, a');
     if (!t) return;
-    if (t.matches('[data-add]')) {
-      change(t.dataset.add, 1);
-      const btn = $('.cart-btn');
-      btn?.classList.remove('bump'); void btn?.offsetWidth; btn?.classList.add('bump');
-      const label = t.textContent;
-      t.textContent = 'Affixed';
-      setTimeout(() => { t.textContent = label; }, 900);
-    } else if (t.matches('[data-inc]')) change(t.dataset.inc, 1);
+    if (t.matches('[data-inc]')) change(t.dataset.inc, 1);
     else if (t.matches('[data-dec]')) change(t.dataset.dec, -1);
     else if (t.matches('[data-remove]')) change(t.dataset.remove, -Infinity);
     else if (t.matches('[data-cart-open]')) openDrawer();
@@ -105,35 +121,53 @@
   scrim?.addEventListener('click', closeDrawer);
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && drawer?.classList.contains('open')) closeDrawer(); });
 
-  /* ---------- menu filter ---------- */
+  /* ---------- menu categories ---------- */
   $$('.filter').forEach((btn) => btn.addEventListener('click', () => {
-    $$('.filter').forEach((b) => { b.classList.toggle('is-active', b === btn); b.setAttribute('aria-selected', b === btn); });
-    $('.stamp-card').forEach((s) => { s.hidden = btn.dataset.filter !== 'all' && s.dataset.category !== btn.dataset.filter; });
+    $$('.filter').forEach((b) => { b.classList.toggle('is-active', b === btn); b.setAttribute('aria-selected', String(b === btn)); });
+    $$('.stamp-card').forEach((s) => { s.hidden = btn.dataset.filter !== 'all' && s.dataset.category !== btn.dataset.filter; });
   }));
 
-  /* ---------- drink overview popup ---------- */
+  /* ---------- drink and dish popup: size, choice, quantity ---------- */
   const dlg = $('#drink-dialog');
-  let current = null;
+  let current = null; // slug of the item being shown
   let qty = 1;
-  const setQty = (n) => { qty = Math.max(1, Math.min(20, n)); $('[data-d-qty]', dlg).textContent = qty; };
+
+  const optionHtml = (name, value, title, price, checked) =>
+    `<label class="opt"><input type="radio" name="${name}" value="${esc(value)}"${checked ? ' checked' : ''}><span class="opt-body"><b>${esc(title)}</b>${price == null ? '' : `<em>${peso(price)}</em>`}</span></label>`;
+  const picked = (name) => $(`input[name="${name}"]:checked`, dlg)?.value || null;
+  const unitNow = () => { const item = MENU[current]; return item.sizes ? item.sizes[picked('d-size')] : item.price; };
+  function refreshAdd() {
+    const add = $('[data-d-add]', dlg);
+    if (!add.classList.contains('added')) add.textContent = `Add to order · ${peso(unitNow() * qty)}`;
+  }
+  const setQty = (n) => { qty = Math.max(1, Math.min(20, n)); $('[data-d-qty]', dlg).textContent = qty; refreshAdd(); };
 
   function openDrink(card) {
     if (!dlg) return;
-    current = card.dataset.open;
-    const d = card.dataset;
+    const item = has(MENU, card.dataset.open) ? MENU[card.dataset.open] : null;
+    if (!item) return;
+    current = item.slug;
     $('[data-d-art]', dlg).innerHTML = card.querySelector('.stamp-art svg').outerHTML;
-    $('[data-d-price]', dlg).textContent = d.price;
-    $('[data-d-name-stamp]', dlg).textContent = d.name;
-    $('[data-d-name]', dlg).textContent = d.name;
-    $('[data-d-cat]', dlg).textContent = d.category;
-    $('[data-d-blurb]', dlg).textContent = d.blurb;
-    $('[data-d-serve]', dlg).textContent = d.serve;
-    $('[data-d-price-text]', dlg).textContent = d.price;
-    $('[data-d-tag]', dlg).textContent = d.tag;
-    $('[data-d-tag-row]', dlg).hidden = !d.tag;
-    const add = $('[data-d-add]', dlg);
-    add.classList.remove('added');
-    add.textContent = 'Add to order';
+    $('[data-d-price]', dlg).textContent = $('.stamp-denom', card).textContent;
+    $('[data-d-name-stamp]', dlg).textContent = item.name;
+    $('[data-d-name]', dlg).textContent = item.name;
+    $('[data-d-cat]', dlg).textContent = item.category;
+    const note = $('[data-d-note]', dlg);
+    note.textContent = item.note || '';
+    note.hidden = !item.note;
+    $('[data-d-blurb]', dlg).textContent = item.blurb;
+
+    $('[data-d-sizes-group]', dlg).hidden = !item.sizes;
+    if (item.sizes) {
+      $('[data-d-sizes]', dlg).innerHTML = Object.entries(item.sizes)
+        .map(([k, p], i) => optionHtml('d-size', k, `${SIZES[k].label} · ${SIZES[k].oz} oz`, p, i === 0)).join('');
+    }
+    $('[data-d-choice-group]', dlg).hidden = !item.choice;
+    if (item.choice) {
+      $('[data-d-choice-legend]', dlg).textContent = item.choice.label;
+      $('[data-d-choices]', dlg).innerHTML = item.choice.options.map((o, i) => optionHtml('d-choice', o, o, null, i === 0)).join('');
+    }
+    $('[data-d-add]', dlg).classList.remove('added');
     setQty(1);
     document.body.style.overflow = 'hidden';
     if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
@@ -145,6 +179,7 @@
   }
   dlg?.addEventListener('close', () => { document.body.style.overflow = ''; });
   dlg?.addEventListener('click', (e) => { if (e.target === dlg) closeDrink(); }); // click on the backdrop
+  dlg?.addEventListener('change', (e) => { if (e.target.matches('input[type="radio"]')) refreshAdd(); });
   document.addEventListener('click', (e) => {
     const card = e.target.closest('[data-open]');
     if (card) return openDrink(card);
@@ -153,19 +188,22 @@
     else if (e.target.closest('[data-d-inc]')) setQty(qty + 1);
     else if (e.target.closest('[data-d-dec]')) setQty(qty - 1);
     else if (e.target.closest('[data-d-add]')) {
+      const item = MENU[current];
       const add = $('[data-d-add]', dlg);
-      change(current, qty);
+      change(lineKey(item.slug, item.sizes ? picked('d-size') : null, item.choice ? picked('d-choice') : null), qty);
       add.classList.add('added');
       add.textContent = 'Added to your order';
-      const btn = $('.cart-btn');
-      btn?.classList.remove('bump'); void btn?.offsetWidth; btn?.classList.add('bump');
+      bumpCart();
       setTimeout(closeDrink, 700);
     }
   });
-  // Deep link: /#drink-kapi-alsaha opens that drink.
+  // Deep link: /#drink-kapi-alsaha opens that item (and its category).
   if (location.hash.startsWith('#drink-')) {
     const card = $(`[data-open="${CSS.escape(location.hash.slice(7))}"]`);
-    if (card) setTimeout(() => openDrink(card), 300);
+    if (card) {
+      $(`.filter[data-filter="${CSS.escape(card.dataset.category)}"]`)?.click();
+      setTimeout(() => openDrink(card), 300);
+    }
   }
 
   /* ---------- API helpers ---------- */
@@ -322,7 +360,7 @@
     const totalEl = $('[data-summary-total]');
     const empty = $('[data-checkout-empty]');
     const entries = Object.entries(cart);
-    list.innerHTML = lineItems(entries.map(([slug, qty]) => ({ name: MENU[slug].name, price: MENU[slug].price, qty })));
+    list.innerHTML = lineItems(entries.map(([key, qty]) => { const d = describe(key); return { name: fullName(d), price: d.unit, qty }; }));
     totalEl.textContent = peso(total());
     empty.hidden = entries.length > 0;
     form.hidden = entries.length === 0;
@@ -336,7 +374,7 @@
       try {
         const out = await api('order', {
           ...Object.fromEntries(new FormData(form)),
-          items: Object.entries(cart).map(([slug, qty]) => ({ slug, qty })),
+          items: Object.entries(cart).map(([key, qty]) => { const d = describe(key); return { slug: d.item.slug, size: d.size, choice: d.choice, qty }; }),
         });
         location.href = out.redirect;
       } catch (err) {

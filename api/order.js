@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import * as db from '../lib/db.js';
-import { findItem } from '../lib/menu.js';
+import { findItem, lineName, unitPrice } from '../lib/menu.js';
 import { guardWrite, query, readJson, safeEqual, send } from '../lib/http.js';
 import { availableMethods, paymentsMode, verifyPayment } from '../lib/payments.js';
 
@@ -69,14 +69,27 @@ async function createOrder(req, res) {
     const qty = Number(line?.qty);
     if (!item) return send(res, 422, { error: 'An item in your order is no longer available.' });
     if (!Number.isInteger(qty) || qty < 1 || qty > 20) return send(res, 422, { error: 'Invalid quantity.' });
-    merged.set(item.slug, Math.min((merged.get(item.slug) || 0) + qty, 20));
+
+    // Drinks need one of the sizes they are sold in; food has none.
+    const size = item.sizes ? String(line?.size ?? '') : null;
+    if (item.sizes && unitPrice(item, size) == null) return send(res, 422, { error: `Please choose a size for ${item.name}.` });
+    if (!item.sizes && line?.size) return send(res, 422, { error: `${item.name} does not come in sizes.` });
+
+    const choice = item.choice ? String(line?.choice ?? '') : null;
+    if (item.choice && !item.choice.options.includes(choice)) {
+      return send(res, 422, { error: `Please choose ${item.choice.label.toLowerCase()} for ${item.name}.` });
+    }
+
+    const key = `${item.slug}|${size}|${choice}`;
+    merged.set(key, { item, size, choice, qty: Math.min((merged.get(key)?.qty || 0) + qty, 20) });
   }
 
-  const items = [...merged].map(([slug, qty]) => {
-    const item = findItem(slug);
-    return { product_slug: slug, name: item.name, price: item.price, qty };
-  });
-  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0); // GCash accepts PHP 1 to PHP 100,000; the menu keeps orders well inside that
+  const items = [...merged.values()].map(({ item, size, choice, qty }) => ({
+    product_slug: item.slug, name: lineName(item, size, choice), price: unitPrice(item, size), qty,
+  }));
+  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  // GCash and QR Ph accept PHP 1 up to PHP 100,000 per payment.
+  if (total > 10000000) return send(res, 422, { error: 'Orders above ₱100,000 cannot be paid online. Please contact us.' });
 
   const ref = 'KTA-' + crypto.randomBytes(5).toString('hex').toUpperCase();
   const accessKey = crypto.randomBytes(18).toString('hex');
