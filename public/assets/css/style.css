@@ -628,3 +628,17 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .hero h1 .serif-italic.hero-tagline { font-size: calc(var(--logo-w) * .105); }
 .hero h1 .serif-italic.hero-tagline { font-size: calc(var(--logo-w) * .125); }
 .hero .lead { font-size: clamp(.8rem, 2.3vw, .95rem); }
+
+/* Merch */
+.merch { padding: clamp(64px, 9vw, 110px) 0; color: var(--cream); background: radial-gradient(700px 360px at 12% 0%, rgba(201, 162, 122, .14), transparent 70%), linear-gradient(160deg, #241b14, #17110c); }
+.merch-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: clamp(28px, 5vw, 72px); align-items: center; }
+.merch-photo { position: relative; margin: 0; padding: 12px; background: var(--paper); border-radius: 6px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); transform: rotate(-1.4deg); }
+.merch-photo img { display: block; width: 100%; height: auto; border-radius: 2px; }
+.merch-stamp { position: absolute; right: -14px; bottom: -18px; display: grid; place-items: center; width: 92px; height: 92px; border-radius: 50%; background: var(--tan); color: var(--espresso); border: 2px dashed rgba(26, 22, 18, .55); outline: 4px solid var(--tan); font: 700 .7rem/1.25 var(--sans); letter-spacing: .14em; text-transform: uppercase; text-align: center; transform: rotate(10deg); }
+.merch-copy h2 { font-size: clamp(2rem, 4.4vw, 3.2rem); margin-bottom: 16px; }
+.merch-copy h2 .serif-italic { color: var(--tan); }
+.merch-copy > p { color: rgba(245, 239, 227, .8); max-width: 460px; }
+.merch-points { list-style: none; padding: 0; margin: 24px 0 28px; display: grid; gap: 12px; max-width: 460px; }
+.merch-points li { padding: 14px 18px; border: 1px solid rgba(201, 162, 122, .3); border-radius: var(--radius); background: rgba(245, 239, 227, .05); font-size: .92rem; }
+.merch-points strong { display: block; font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: var(--tan); margin-bottom: 4px; }
+@media (max-width: 900px) { .merch-grid { grid-template-columns: 1fr; } .merch-photo { max-width: 560px; margin-inline: auto; } .merch-stamp { right: -6px; width: 76px; height: 76px; font-size: .6rem; } }
