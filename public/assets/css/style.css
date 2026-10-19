@@ -530,7 +530,6 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .package-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 .package-panel-head h3 { font-size: clamp(1.5rem, 3vw, 2rem); color: var(--cream); }
 .package-panel-head .eyebrow { margin-bottom: 8px; }
-.package-panel-sub { margin: 6px 0 0; color: rgba(245, 239, 227, .8); font-size: .92rem; }
 .package-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 56px 16px; padding-top: 38px; }
 .package { position: relative; display: flex; flex-direction: column; gap: 8px; padding: 56px 18px 18px; border: 2px solid var(--rust); border-radius: 28px; background: var(--paper); color: var(--ink); transition: opacity .22s ease, transform .22s ease; }
 .package[hidden] { display: none; }
@@ -571,10 +570,6 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .estimate:empty { display: none; }
 .estimate strong { font: 700 1.3rem var(--serif); color: var(--rust-dark); }
 .estimate small { display: block; margin-top: 2px; color: var(--muted); font-size: .76rem; }
-.package-extras { color: rgba(245, 239, 227, .82); font-size: .84rem; }
-.package-extras p { margin: 0 0 6px; }
-.package-extras strong { color: var(--tan); }
-.package-panel.has-selection .package-panel-sub, .package-panel.has-selection .package-extras { display: none; }
 
 /* Main photo keeps its natural shape and stays in view while the form is open */
 .cart-grid { align-items: start; grid-template-columns: 1fr 1fr; }

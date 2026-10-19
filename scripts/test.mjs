@@ -41,6 +41,8 @@ try {
     assert.ok(!html.includes('Birthday coffee cart'));
     assert.ok(!html.includes('class="package-price"'));
     assert.ok(!html.includes('Add-ons:') && !html.includes('fee is charged'));
+    // No intro sentence under the heading and no contact line in the package panel.
+    assert.ok(!html.includes('Pick a package') && !html.includes('For inquiries and reservations'));
     assert.ok(html.indexOf('data-package-panel') < html.indexOf('id="inquiry-form"'));
     // Coffee cart section: main photo, a 12-photo carousel, a viewer with 13 photos, and every image file exists.
     assert.equal((html.match(/class="gallery-item"/g) || []).length, 12);
