@@ -29,6 +29,9 @@ try {
     assert.equal((html.match(/data-add=/g) || []).length, 0);
     assert.equal((html.match(/data-d-add/g) || []).length, 1);
     assert.ok(html.includes("<dialog class=\"drink\""));
+    // The typewriter sentence is also present as plain text for screen readers and no-script visitors.
+    assert.match(html, /<p class="lead" data-typewriter><span class="sr-only">Rooted in the warm/);
+    assert.ok(html.includes("chunkfive.woff2"));
     assert.ok(html.indexOf('class="hero"') < html.indexOf('id="cart"'));
     assert.ok(html.indexOf('id="cart"') < html.indexOf('class="strip"'));
   });

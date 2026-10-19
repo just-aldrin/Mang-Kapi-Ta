@@ -407,3 +407,22 @@ table.data th { font-size: .66rem; letter-spacing: .14em; text-transform: upperc
 .qr-timer { font-size: .88rem; color: var(--muted); }
 .qr-steps { text-align: left; max-width: 340px; margin: 14px auto; padding-left: 1.3em; font-size: .9rem; color: var(--muted); }
 .qr-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+/* Hero title font: Chunk Five (self-hosted) */
+@font-face {
+  font-family: "Chunk Five";
+  src: url("/assets/fonts/chunkfive.woff2") format("woff2"), url("/assets/fonts/chunkfive.woff") format("woff");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+.hero h1 { font-family: "Chunk Five", var(--serif); font-weight: 400; letter-spacing: .01em; line-height: 1.04; }
+.hero h1 .serif-italic { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: 0; }
+
+/* Hero typewriter: every letter exists from the start (so nothing reflows) and is revealed one by one */
+html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwards; } /* safety net if scripts fail */
+@keyframes tw-show { to { visibility: visible; } }
+.tw .w { display: inline-block; white-space: nowrap; }
+.tw .tw-c { opacity: 0; }
+.tw .tw-c.on { opacity: 1; }
+.tw-caret { display: inline-block; position: relative; width: 0; height: 1em; vertical-align: baseline; }
+.tw-caret::after { content: ""; position: absolute; left: 1px; top: .1em; width: 2px; height: 1.1em; background: var(--tan); animation: tw-blink 1s steps(1) infinite; }
+@keyframes tw-blink { 50% { opacity: 0; } }

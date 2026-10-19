@@ -464,5 +464,46 @@
     loadAdmin();
   }
 
+  /* ---------- hero typewriter ---------- */
+  const tw = $('[data-typewriter] .tw');
+  if (tw) {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      tw.classList.add('tw-ready'); // show the text as is
+    } else {
+      const text = tw.textContent;
+      tw.textContent = '';
+      const chars = [];
+      text.split(/(\s+)/).forEach((part) => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { tw.appendChild(document.createTextNode(' ')); return; }
+        const word = document.createElement('span');
+        word.className = 'w';
+        for (const ch of part) {
+          const c = document.createElement('span');
+          c.className = 'tw-c';
+          c.textContent = ch;
+          word.appendChild(c);
+          chars.push(c);
+        }
+        tw.appendChild(word);
+      });
+      tw.classList.add('tw-ready');
+
+      const caret = document.createElement('span');
+      caret.className = 'tw-caret';
+      let i = 0;
+      const step = () => {
+        if (i >= chars.length) { setTimeout(() => caret.remove(), 2500); return; }
+        const c = chars[i++];
+        c.classList.add('on');
+        c.after(caret);
+        // about 26 letters a second, with a short breath at punctuation
+        const ch = c.textContent;
+        setTimeout(step, ',;'.includes(ch) ? 240 : '.!?'.includes(ch) ? 380 : 38);
+      };
+      setTimeout(step, 600);
+    }
+  }
+
   render();
 })();
