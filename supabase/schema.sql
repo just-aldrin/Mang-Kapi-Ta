@@ -36,6 +36,7 @@ create table if not exists public.inquiries (
   guests     text not null,
   contact    text not null,
   venue      text not null,
+  package_summary text,                 -- package, add-ons and estimated total chosen on the website
   created_at timestamptz not null default now()
 );
 
@@ -56,3 +57,8 @@ alter table public.inquiries    enable row level security;
 alter table public.subscribers  enable row level security;
 
 revoke all on public.orders, public.order_items, public.inquiries, public.subscribers from anon, authenticated;
+
+-- ---------------------------------------------------------------------------------------------
+-- Already ran this file before packages were added? Run just this line once in the SQL Editor.
+-- (Until you do, the website still saves inquiries and keeps the package details in the venue text.)
+alter table public.inquiries add column if not exists package_summary text;

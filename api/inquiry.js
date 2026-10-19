@@ -1,5 +1,6 @@
 import * as db from '../lib/db.js';
 import { guardWrite, readJson, send } from '../lib/http.js';
+import { quote } from '../lib/packages.js';
 
 export default async function handler(req, res) {
   if (!guardWrite(req, res)) return;
@@ -25,14 +26,28 @@ export default async function handler(req, res) {
     const isPhone = /^(?:\+63|0)9\d{9}$/.test(contact.replace(/[\s-]+/g, ''));
     if (!isEmail && !isPhone) return send(res, 422, { error: 'Enter a valid email or Philippine mobile number.' });
 
+    // A package is optional, but if one is named it must be real. The price is worked out here, never trusted from the browser.
+    const packageId = String(input.package ?? '').trim();
+    let priced = null;
+    if (packageId) {
+      priced = quote(packageId, { sticker: input.addon_sticker === true, signature: input.addon_signature === true, extraCups: input.extra_cups });
+      if (!priced) return send(res, 422, { error: 'Please choose one of the listed packages.' });
+    }
+
     await db.createInquiry({
       name: name.slice(0, 120),
       event_date: eventDate,
       guests: guests.slice(0, 40),
       contact: contact.slice(0, 120),
       venue: venue.slice(0, 160),
+      package_summary: priced ? priced.summary : null,
     });
-    send(res, 200, { ok: true, message: 'Thank you. We have your date and will reach out within one business day.' });
+    send(res, 200, {
+      ok: true,
+      message: priced
+        ? `Thank you. We have your request for ${priced.pkg.name} and will reach out within one business day.`
+        : 'Thank you. We have your date and will reach out within one business day.',
+    });
   } catch (err) {
     console.error('inquiry:', err);
     send(res, 500, { error: 'Something went wrong. Please try again.' });

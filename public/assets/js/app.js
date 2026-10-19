@@ -186,17 +186,104 @@
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   $$('[data-min-today]').forEach((el) => { el.min = today; });
 
-  /* ---------- event inquiry ---------- */
+  /* ---------- coffee cart packages: choosing one opens the reservation form inside it ---------- */
   const inquiry = $('#inquiry-form');
+  const panel = $('[data-package-panel]');
+  const packageData = JSON.parse($('#package-data')?.textContent || 'null');
+  const pesoWhole = (n) => '₱' + Number(n).toLocaleString('en-PH');
+
+  // Live estimate: package price + add-ons + extra cups + the transportation fee (the team confirms the final quote).
+  function estimate() {
+    if (!inquiry || !packageData) return;
+    const box = $('[data-estimate]', inquiry);
+    const pkg = packageData.packages.find((p) => p.id === inquiry.elements.package.value);
+    if (!pkg) { box.textContent = ''; return; }
+    const extra = Math.max(0, Math.min(500, Math.floor(Number(inquiry.elements.extra_cups.value) || 0)));
+    const addOns = packageData.addOns.filter((a) => inquiry.elements['addon_' + a.id].checked);
+    const total = pkg.price + addOns.reduce((sum, a) => sum + a.price, 0) + extra * packageData.extraCup + packageData.transport;
+    box.innerHTML = `Estimated total <strong>${pesoWhole(total)}</strong><small>Includes ${pesoWhole(packageData.transport)} for transportation and logistics. We confirm the final quote with you.</small>`;
+  }
+  inquiry?.addEventListener('input', estimate);
+  inquiry?.addEventListener('change', estimate);
+
+  if (panel && inquiry) {
+    const cards = $$('.package', panel);
+    const holder = $('[data-inquiry-holder]');
+    let current = null;
+    let token = 0;
+
+    function choose(id) {
+      const card = cards.find((c) => c.dataset.package === id);
+      if (!card) return;
+      const mine = ++token;
+      current = card;
+      panel.classList.add('has-selection');
+      cards.forEach((c) => {
+        const on = c === card;
+        c.classList.toggle('is-selected', on);
+        $('[data-package-select]', c).setAttribute('aria-expanded', String(on));
+        if (!on) { c.classList.add('is-leaving'); setTimeout(() => { if (token === mine) c.hidden = true; }, 220); }
+      });
+      $('[data-package-back]', card).hidden = false;
+      inquiry.elements.package.value = id;
+      $('[data-selected-label]', inquiry).textContent = `${card.dataset.name} selected`;
+      $('[data-selected-includes]', inquiry).textContent = `This package includes ${card.dataset.includes}`;
+      $('[data-inquiry-submit]', inquiry).textContent = `Send reservation for ${card.dataset.name}`;
+      $('[data-package-form]', card).append(inquiry);
+      say($('[data-inquiry-msg]', inquiry), '', true);
+      estimate();
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setTimeout(() => { if (token === mine) $('input[name="name"]', inquiry).focus({ preventScroll: true }); }, 350);
+    }
+
+    function reset() {
+      token++;
+      const previous = current;
+      current = null;
+      panel.classList.remove('has-selection');
+      cards.forEach((c) => {
+        c.hidden = false;
+        c.classList.remove('is-selected', 'is-leaving');
+        $('[data-package-select]', c).setAttribute('aria-expanded', 'false');
+        $('[data-package-back]', c).hidden = true;
+      });
+      holder.append(inquiry);
+      inquiry.elements.package.value = '';
+      previous?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      if (previous) $('[data-package-select]', previous).focus({ preventScroll: true });
+    }
+
+    panel.addEventListener('click', (e) => {
+      const pick = e.target.closest('[data-package-select]');
+      if (pick) choose(pick.dataset.packageSelect);
+      else if (e.target.closest('[data-package-back]')) reset();
+    });
+
+    // Deep link: /#package-a opens that package's form.
+    const wanted = location.hash.match(/^#package-([a-z]+)$/);
+    if (wanted) setTimeout(() => choose(wanted[1]), 300);
+  }
+
   inquiry?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const msg = $('[data-inquiry-msg]');
-    const btn = $('button[type=submit]', inquiry);
+    const msg = $('[data-inquiry-msg]', inquiry);
+    const btn = $('[data-inquiry-submit]', inquiry);
+    const f = inquiry.elements;
+    const payload = {
+      name: f.name.value, event_date: f.event_date.value, guests: f.guests.value, contact: f.contact.value, venue: f.venue.value,
+      package: f.package.value,
+      addon_sticker: f.addon_sticker.checked,
+      addon_signature: f.addon_signature.checked,
+      extra_cups: Number(f.extra_cups.value) || 0,
+    };
     btn.disabled = true;
     try {
-      const out = await api('inquiry', Object.fromEntries(new FormData(inquiry)));
+      const out = await api('inquiry', payload);
       say(msg, out.message, true);
+      const chosen = f.package.value;
       inquiry.reset();
+      f.package.value = chosen; // stay on the chosen package
+      estimate();
     } catch (err) { say(msg, err.message, false); }
     btn.disabled = false;
   });
@@ -436,8 +523,8 @@
             <td>${o.status === 'paid' ? `<button class="btn btn-dark" style="padding:8px 14px" data-fulfil="${esc(o.ref)}">Mark ready</button>` : ''}</td>
           </tr>`).join('') || '<tr><td colspan="7">No orders yet.</td></tr>';
         $('[data-admin-inquiries]').innerHTML = data.inquiries.map((q) => `
-          <tr><td>${esc(q.name)}</td><td>${esc(q.event_date)}</td><td>${esc(q.guests)}</td><td>${esc(q.contact)}</td><td>${esc(q.venue)}</td><td>${esc(when(q.created_at))}</td></tr>`).join('')
-          || '<tr><td colspan="6">No inquiries yet.</td></tr>';
+          <tr><td>${esc(q.name)}</td><td>${esc(q.event_date)}</td><td>${esc(q.guests)}</td><td>${esc(q.contact)}</td><td>${esc(q.venue)}</td><td>${esc(q.package_summary || '')}</td><td>${esc(when(q.created_at))}</td></tr>`).join('')
+          || '<tr><td colspan="7">No inquiries yet.</td></tr>';
       } catch (err) {
         if (err.status === 404) $('[data-admin-disabled]').hidden = false;
         else showLogin();

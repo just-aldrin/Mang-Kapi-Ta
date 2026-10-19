@@ -31,11 +31,17 @@ try {
     assert.ok(html.includes("<dialog class=\"drink\""));
     // The typewriter sentence is also present as plain text for screen readers and no-script visitors.
     assert.match(html, /<p class="lead" data-typewriter><span class="sr-only">Rooted in the warm/);
-    assert.ok(html.includes("chunkfive.woff2"));
+    // Hero: the logo replaces the written title (its words live in the image's alt text).
+    assert.ok(html.includes('src="/assets/images/main-hero-logo.png"'));
+    assert.ok(!html.includes('<h1>Mang Kapi Ta.'));
+    // Coffee cart: two package cards beside the main photo; the reservation form waits in a hidden holder.
+    assert.equal((html.match(/class="package"/g) || []).length, 2);
+    assert.match(html, /<div class="inquiry-holder" data-inquiry-holder hidden>/);
+    assert.ok(html.indexOf('data-package-panel') < html.indexOf('id="inquiry-form"'));
     // Coffee cart section: main photo, a 12-photo carousel, a viewer with 13 photos, and every image file exists.
     assert.equal((html.match(/class="gallery-item"/g) || []).length, 12);
     assert.ok(html.includes("cart/main.jpg"));
-    assert.ok(html.indexOf('class="packages"') < html.indexOf('data-gallery')); // packages come before the carousel
+    assert.ok(html.indexOf('data-package-panel') < html.indexOf('data-gallery')); // packages come before the carousel
     const data = JSON.parse(html.match(/<script type="application\/json" id="gallery-data">([^<]+)<\/script>/)[1]);
     assert.equal(data.length, 13);
     assert.ok(html.includes('id="lightbox"'));
@@ -108,6 +114,11 @@ try {
     const date = new Date(Date.now() + 30 * 864e5).toISOString().slice(0, 10);
     assert.equal((await json('/api/inquiry', { name: 'A', event_date: date, guests: '50 - 80 guests', contact: '0917 123 4567', venue: 'Hall' })).status, 200);
     assert.equal((await json('/api/inquiry', { name: 'A', event_date: '2020-01-01', guests: 'x', contact: '0917 123 4567', venue: 'Hall' })).status, 422);
+    // With a package: the server prices it (Package B 18,750 + sticker 250 + 20 extra cups at 150 + 1,000 transport = 23,000).
+    const withPackage = await json('/api/inquiry', { name: 'Pkg Host', event_date: date, guests: '80 - 150 guests', contact: '0917 123 4567', venue: 'Garden', package: 'b', addon_sticker: true, addon_signature: false, extra_cups: 20, price: 1 });
+    assert.equal(withPackage.status, 200);
+    assert.match((await withPackage.json()).message, /Package B/);
+    assert.equal((await json('/api/inquiry', { name: 'A', event_date: date, guests: 'x', contact: '0917 123 4567', venue: 'Hall', package: 'nonsense' })).status, 422);
     assert.equal((await json('/api/subscribe', { email: 'a@b.co' })).status, 200);
     assert.equal((await json('/api/subscribe', { email: 'bad' })).status, 422);
   });
@@ -120,6 +131,9 @@ try {
     const cookie = login.headers.get('set-cookie').split(';')[0];
     const data = await (await fetch(base + '/api/admin', { headers: { Cookie: cookie } })).json();
     assert.ok(data.orders.length >= 2 && data.inquiries.length >= 1);
+    const packaged = data.inquiries.find((q) => /Package B/.test(q.package_summary || ''));
+    assert.ok(packaged, 'the package inquiry should appear on the staff page');
+    assert.match(packaged.package_summary, /estimated total PHP 23,000/);
     assert.equal((await fetch(base + '/api/admin', { headers: { Cookie: 'kapi_admin=1.deadbeef' } })).status, 401);
   });
 
