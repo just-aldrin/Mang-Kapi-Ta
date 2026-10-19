@@ -82,18 +82,18 @@ p { margin: 0 0 1em; }
   position: relative; overflow: hidden; color: var(--cream); text-align: center;
   padding: clamp(80px, 13vw, 150px) 0 clamp(90px, 14vw, 160px);
   background:
-    radial-gradient(760px 430px at 50% 52%, rgba(52, 32, 20, .46), transparent 72%),
-    linear-gradient(180deg, rgba(128, 88, 58, .46) 0%, rgba(110, 74, 48, .42) 50%, rgba(70, 46, 31, .8) 100%),
+    radial-gradient(760px 430px at 50% 52%, rgba(30, 20, 14, .3), transparent 72%),
+    linear-gradient(180deg, rgba(66, 49, 38, .66) 0%, rgba(58, 43, 33, .66) 50%, rgba(40, 30, 23, .88) 100%),
     url("/assets/images/hero-1920.jpg") center 55% / cover no-repeat,
-    #6a4730;
+    #3a2b21;
 }
 @media (max-width: 700px) {
   .hero {
     background:
-      radial-gradient(90% 55% at 50% 50%, rgba(52, 32, 20, .5), transparent 80%),
-      linear-gradient(180deg, rgba(128, 88, 58, .5) 0%, rgba(110, 74, 48, .46) 50%, rgba(70, 46, 31, .82) 100%),
+      radial-gradient(90% 55% at 50% 50%, rgba(30, 20, 14, .32), transparent 80%),
+      linear-gradient(180deg, rgba(66, 49, 38, .7) 0%, rgba(58, 43, 33, .7) 50%, rgba(40, 30, 23, .9) 100%),
       url("/assets/images/hero-900.jpg") center / cover no-repeat,
-      #6a4730;
+      #3a2b21;
   }
 }
 .hero-logo { width: 80px; height: auto; margin: 0 auto 22px; opacity: .95; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, .45)); }
