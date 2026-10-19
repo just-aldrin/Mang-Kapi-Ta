@@ -32,6 +32,16 @@ try {
     // The typewriter sentence is also present as plain text for screen readers and no-script visitors.
     assert.match(html, /<p class="lead" data-typewriter><span class="sr-only">Rooted in the warm/);
     assert.ok(html.includes("chunkfive.woff2"));
+    // Coffee cart section: main photo, a 12-photo carousel, a viewer with 13 photos, and every image file exists.
+    assert.equal((html.match(/class="gallery-item"/g) || []).length, 12);
+    assert.ok(html.includes("cart/main.jpg"));
+    const data = JSON.parse(html.match(/<script type="application\/json" id="gallery-data">([^<]+)<\/script>/)[1]);
+    assert.equal(data.length, 13);
+    assert.ok(html.includes('id="lightbox"'));
+    const images = new Set(html.match(/\/assets\/images\/cart\/[A-Za-z0-9-]+\.jpg/g) || []);
+    for (const entry of data) images.add(entry.src);
+    assert.ok(images.size >= 25);
+    for (const src of images) assert.equal((await fetch(base + src)).status, 200, src + " should exist");
     assert.ok(html.indexOf('class="hero"') < html.indexOf('id="cart"'));
     assert.ok(html.indexOf('id="cart"') < html.indexOf('class="strip"'));
   });

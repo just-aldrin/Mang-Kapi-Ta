@@ -464,6 +464,149 @@
     loadAdmin();
   }
 
+  /* ---------- coffee cart photos: carousel and viewer ---------- */
+  const viewerData = $('#gallery-data');
+  const photos = viewerData ? JSON.parse(viewerData.textContent) : [];
+  const lb = $('#lightbox');
+  let lbIndex = 0;
+  let lbFocus = null;
+
+  function lbShow(i) {
+    lbIndex = (i + photos.length) % photos.length;
+    const p = photos[lbIndex];
+    const img = $('[data-lb-img]', lb);
+    img.width = p.w;
+    img.height = p.h;
+    img.alt = p.alt;
+    img.src = p.src;
+    $('[data-lb-caption]', lb).textContent = p.alt;
+    $('[data-lb-count]', lb).textContent = `${lbIndex + 1} / ${photos.length}`;
+    [lbIndex + 1, lbIndex - 1].forEach((n) => { new Image().src = photos[(n + photos.length) % photos.length].src; }); // warm the neighbours
+  }
+  function lbOpen(i) {
+    if (!lb || !photos.length) return;
+    lbFocus = document.activeElement;
+    lbShow(i);
+    document.body.style.overflow = 'hidden';
+    if (typeof lb.showModal === 'function') lb.showModal(); else lb.setAttribute('open', '');
+    $('[data-lb-close]', lb).focus({ preventScroll: true });
+  }
+  function lbClose() {
+    if (typeof lb.close === 'function') lb.close(); else lb.removeAttribute('open');
+  }
+  lb?.addEventListener('close', () => {
+    document.body.style.overflow = '';
+    lbFocus?.focus?.({ preventScroll: true });
+    // keep the carousel in step with the last photo viewed
+    const item = lbIndex > 0 ? $$('.gallery-item')[lbIndex - 1] : null;
+    if (item) {
+      const track = item.parentElement;
+      track.scrollTo({ left: item.offsetLeft - (track.clientWidth - item.offsetWidth) / 2, behavior: 'auto' });
+    }
+  });
+  lb?.addEventListener('click', (e) => { if (e.target === lb) lbClose(); }); // click outside the photo
+  lb?.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') { lbShow(lbIndex + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft') { lbShow(lbIndex - 1); e.preventDefault(); }
+  });
+  // swipe left or right on the photo
+  let swipeX = null;
+  lb?.addEventListener('pointerdown', (e) => { if (e.target.closest('.lb-figure')) swipeX = e.clientX; });
+  lb?.addEventListener('pointerup', (e) => {
+    if (swipeX === null) return;
+    const dx = e.clientX - swipeX;
+    swipeX = null;
+    if (Math.abs(dx) > 50) lbShow(lbIndex + (dx < 0 ? 1 : -1));
+  });
+  document.addEventListener('click', (e) => {
+    const open = e.target.closest('[data-open-photo]');
+    if (open) return lbOpen(Number(open.dataset.openPhoto));
+    if (!lb?.open) return;
+    if (e.target.closest('[data-lb-close]')) lbClose();
+    else if (e.target.closest('[data-lb-next]')) lbShow(lbIndex + 1);
+    else if (e.target.closest('[data-lb-prev]')) lbShow(lbIndex - 1);
+  });
+
+  // Deep link: /#photo-3 opens that photo in the viewer.
+  const photoHash = location.hash.match(/^#photo-(\d+)$/);
+  if (photoHash && photos[Number(photoHash[1])]) setTimeout(() => lbOpen(Number(photoHash[1])), 300);
+
+  const gallery = $('[data-gallery]');
+  if (gallery) {
+    const track = $('[data-g-track]', gallery);
+    const playBtn = $('[data-g-play]', gallery);
+    const PLAY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+    const PAUSE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>';
+
+    // One step is about 80% of the visible width; at either end it wraps around to the other.
+    function step(dir) {
+      const max = track.scrollWidth - track.clientWidth;
+      let to = track.scrollLeft + dir * track.clientWidth * 0.8;
+      if (dir > 0 && track.scrollLeft >= max - 4) to = 0;
+      else if (dir < 0 && track.scrollLeft <= 4) to = max;
+      track.scrollTo({ left: to, behavior: 'smooth' });
+    }
+
+    // Autoplay: on by default, paused while hovered, focused, off-screen, or while a photo is open.
+    // Any manual interaction switches it off; the play button turns it back on.
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let timer = null;
+    let paused = false;
+    let visible = false;
+    function setAuto(on) {
+      clearInterval(timer);
+      playBtn.setAttribute('aria-pressed', String(on));
+      playBtn.setAttribute('aria-label', on ? 'Pause automatic scrolling' : 'Play automatic scrolling');
+      playBtn.innerHTML = on ? PAUSE : PLAY;
+      if (on) timer = setInterval(() => { if (!paused && visible && !document.hidden && !lb?.open) step(1); }, 3800);
+    }
+    new IntersectionObserver((entries) => { visible = entries[0].isIntersecting; }, { threshold: 0.3 }).observe(gallery);
+    gallery.addEventListener('pointerenter', () => { paused = true; });
+    gallery.addEventListener('pointerleave', () => { paused = false; });
+    gallery.addEventListener('focusin', () => { paused = true; });
+    gallery.addEventListener('focusout', () => { paused = false; });
+    const stopAuto = () => setAuto(false);
+
+    $('[data-g-prev]', gallery).addEventListener('click', () => { stopAuto(); step(-1); });
+    $('[data-g-next]', gallery).addEventListener('click', () => { stopAuto(); step(1); });
+    playBtn.addEventListener('click', () => setAuto(playBtn.getAttribute('aria-pressed') !== 'true'));
+    track.addEventListener('touchstart', stopAuto, { passive: true });
+    track.addEventListener('wheel', (e) => { if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) stopAuto(); }, { passive: true });
+    track.addEventListener('keydown', (e) => {
+      const keys = { ArrowRight: () => step(1), ArrowLeft: () => step(-1), Home: () => track.scrollTo({ left: 0, behavior: 'smooth' }), End: () => track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' }) };
+      if (keys[e.key]) { keys[e.key](); stopAuto(); e.preventDefault(); }
+    });
+
+    // Drag with the mouse (touch screens already scroll natively). A drag never counts as a click.
+    let dragging = false;
+    let startX = 0;
+    let startLeft = 0;
+    let moved = 0;
+    let suppressClick = false;
+    track.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      dragging = true; moved = 0; startX = e.clientX; startLeft = track.scrollLeft;
+      stopAuto();
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      moved = Math.max(moved, Math.abs(dx));
+      if (moved > 6) track.classList.add('dragging');
+      track.scrollLeft = startLeft - dx;
+    });
+    window.addEventListener('pointerup', () => {
+      if (!dragging) return;
+      dragging = false;
+      track.classList.remove('dragging');
+      suppressClick = moved > 6;
+      setTimeout(() => { suppressClick = false; }, 60);
+    });
+    track.addEventListener('click', (e) => { if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; } }, true);
+
+    setAuto(!reduceMotion);
+  }
+
   /* ---------- hero typewriter ---------- */
   const tw = $('[data-typewriter] .tw');
   if (tw) {
