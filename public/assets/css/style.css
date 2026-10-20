@@ -667,9 +667,42 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 .branch-map.is-failed { padding: 24px; text-align: center; }
 .map-fallback { padding: 16px; margin: 0; }
 .kapi-pin-wrap { background: none; border: 0; }
-.kapi-pin { position: relative; display: grid; place-items: center; width: 60px; height: 44px; background: var(--espresso); border: 2px solid var(--tan); border-radius: 14px; box-shadow: 0 6px 14px rgba(0, 0, 0, .35); }
-.kapi-pin img { width: 44px; height: auto; }
-.kapi-pin::after { content: ''; position: absolute; left: 50%; bottom: -10px; width: 14px; height: 14px; background: var(--espresso); border-right: 2px solid var(--tan); border-bottom: 2px solid var(--tan); transform: translateX(-50%) rotate(45deg); }
 .leaflet-popup-content { font: 600 .85rem var(--sans); color: var(--ink); }
 .leaflet-container svg.leaflet-attribution-flag { display: inline !important; width: 1em !important; height: .67em !important; vertical-align: baseline; }
 .leaflet-container .leaflet-control-attribution svg { width: 1em; height: .67em; }
+
+/* Menu: one fixed-height row of stamps that scrolls sideways */
+.stamp-scroller { position: relative; max-width: 1180px; margin: 0 auto; }
+.stamp-scroller .stamp-field {
+  display: grid; grid-auto-flow: column; grid-template-rows: repeat(2, auto); grid-auto-columns: max-content;
+  justify-content: safe center; align-content: start; gap: 0;
+  max-width: none; margin: 0; padding: 40px 48px 52px;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: thin; scrollbar-color: var(--clay) transparent;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+.stamp-scroller .stamp-card { scroll-snap-align: center; }
+.stamp-scroller .stamp-field:focus-visible { outline: 3px solid var(--tan); outline-offset: -3px; border-radius: 12px; }
+.stamp-arrow { position: absolute; top: 50%; z-index: 20; width: 44px; height: 44px; margin-top: -22px; border-radius: 50%; border: 1.5px solid var(--forest); background: var(--paper); color: var(--forest); font: 400 1.7rem/1 var(--sans); cursor: pointer; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity .2s; display: grid; place-items: center; padding: 0 0 4px; }
+.stamp-arrow-prev { left: 0; } .stamp-arrow-next { right: 0; }
+.stamp-scroller.can-prev .stamp-arrow-prev, .stamp-scroller.can-next .stamp-arrow-next { opacity: 1; pointer-events: auto; }
+.stamp-arrow:hover { background: var(--forest); color: var(--cream); }
+@media (max-width: 520px) { .stamp-arrow { display: none; } .stamp-scroller .stamp-field { padding-inline: 28px; } }
+
+/* Map pin: the KAPI chat bubble on a dark tag */
+.kapi-pin { position: relative; display: block; width: 74px; height: 66px; }
+.kapi-pin-face { position: absolute; left: 0; top: 0; z-index: 2; display: grid; place-items: center; width: 74px; height: 50px; border-radius: 16px; background: var(--espresso); border: 3px solid var(--tan); box-shadow: 0 6px 14px rgba(0, 0, 0, .35); }
+.kapi-pin-face img { width: 52px; height: auto; display: block; }
+.kapi-pin-tail { position: absolute; left: 50%; top: 40px; z-index: 1; width: 16px; height: 16px; margin-left: -8px; background: var(--espresso); border-right: 3px solid var(--tan); border-bottom: 3px solid var(--tan); transform: rotate(45deg); }
+.kapi-pin::after { content: ''; position: absolute; left: 50%; bottom: 1px; width: 16px; height: 5px; margin-left: -8px; border-radius: 50%; background: rgba(0, 0, 0, .3); filter: blur(1px); }
+
+/* Visit: the cards under the map */
+.visit-extras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: clamp(36px, 5vw, 60px); }
+.vcard { position: relative; padding: 22px 20px 20px; border: 1.5px dashed rgba(139, 94, 75, .45); border-radius: var(--radius); background: rgba(251, 245, 232, .6); }
+.vcard-no { display: block; font: 700 .7rem var(--sans); letter-spacing: .2em; color: var(--clay); margin-bottom: 10px; }
+.vcard h3 { font-size: 1.1rem; margin-bottom: 6px; }
+.vcard p { margin: 0 0 10px; font-size: .88rem; color: var(--muted); max-width: none; }
+.vcard a { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--clay); text-decoration: none; }
+.vcard a:hover { text-decoration: underline; }
+@media (max-width: 900px) { .visit-extras { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 520px) { .visit-extras { grid-template-columns: 1fr; } }
+.stamp-scroller .stamp-field { grid-template-rows: repeat(2, 1fr); height: calc(var(--w) * 2.4 + 92px); }

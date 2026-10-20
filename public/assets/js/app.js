@@ -126,7 +126,27 @@
   $$('.filter').forEach((btn) => btn.addEventListener('click', () => {
     $$('.filter').forEach((b) => { b.classList.toggle('is-active', b === btn); b.setAttribute('aria-selected', String(b === btn)); });
     $$('.stamp-card').forEach((s) => { s.hidden = btn.dataset.filter !== 'all' && s.dataset.category !== btn.dataset.filter; });
+    const field = $('[data-stamp-field]');
+    if (field) field.scrollTo({ left: 0, behavior: 'instant' });
+    updateArrows();
   }));
+
+  const stampField = $('[data-stamp-field]');
+  function updateArrows() {
+    if (!stampField) return;
+    const max = stampField.scrollWidth - stampField.clientWidth;
+    const wrap = stampField.parentElement;
+    wrap.classList.toggle('can-prev', stampField.scrollLeft > 4);
+    wrap.classList.toggle('can-next', stampField.scrollLeft < max - 4);
+  }
+  if (stampField) {
+    stampField.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows);
+    $$('[data-stamp-scroll]').forEach((b) => b.addEventListener('click', () => {
+      stampField.scrollBy({ left: Number(b.dataset.stampScroll) * stampField.clientWidth * 0.8, behavior: 'smooth' });
+    }));
+    updateArrows();
+  }
 
   /* ---------- drink and dish popup: size, choice, quantity ---------- */
   const dlg = $('#drink-dialog');
@@ -244,8 +264,8 @@
       const map = L.map(mapEl, { scrollWheelZoom: false, dragging: !L.Browser.mobile, tap: false, zoomControl: true });
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
       const icon = L.divIcon({
-        className: 'kapi-pin-wrap', iconSize: [60, 58], iconAnchor: [30, 56], popupAnchor: [0, -52],
-        html: '<span class="kapi-pin"><img src="/assets/images/logo-cream.png" alt=""></span>',
+        className: 'kapi-pin-wrap', iconSize: [74, 66], iconAnchor: [37, 62], popupAnchor: [0, -60],
+        html: '<span class="kapi-pin"><span class="kapi-pin-tail"></span><span class="kapi-pin-face"><img src="/assets/images/logo-cream.png" alt=""></span></span>',
       });
       const pins = branchBtns.map((btn) => {
         const at = [Number(btn.dataset.lat), Number(btn.dataset.lng)];

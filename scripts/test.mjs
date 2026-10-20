@@ -27,7 +27,8 @@ try {
   await check('home page is served and the cart section follows the hero', async () => {
     const html = await (await fetch(base + '/')).text();
     assert.equal((html.match(/class="stamp-card"/g) || []).length, 36);
-    assert.equal((html.match(/class="stamp-card"[^>]*\shidden/g) || []).length, 30); // only Kapi Picks (6) shows first
+    assert.equal((html.match(/class="stamp-card"[^>]*\shidden/g) || []).length, 0); // All is the default, so every stamp shows
+    assert.match(html, /class="filter is-active" data-filter="all"/);
     for (const c of CATEGORIES) assert.ok(html.includes(`data-filter="${c.replace('&', '&amp;')}"`), `tab for ${c}`);
     assert.ok(html.includes('data-filter="all"') && html.includes('Handymax (Hx) 12 oz'));
     // Stamps are view-only: the add button exists only inside the details popup.
