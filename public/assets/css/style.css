@@ -691,7 +691,8 @@ html.js .tw:not(.tw-ready) { visibility: hidden; animation: tw-show 0s 3s forwar
 /* Map: darker, warm tiles, with the bare KAPI logo as the pin */
 .branch-map .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) sepia(.5) saturate(.8) brightness(.82) contrast(.92); }
 .branch-map.leaflet-container { background: #231a13; }
-.kapi-pin { display: block; width: 76px; height: auto; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .7)); }
+.kapi-pin { display: block; width: 76px; height: 49px; background: #6b4430; -webkit-mask: url(/assets/images/logo-cream.png) center / contain no-repeat; mask: url(/assets/images/logo-cream.png) center / contain no-repeat; }
+.kapi-pin-wrap { filter: drop-shadow(0 0 1px #f5efe3) drop-shadow(0 0 1px #f5efe3) drop-shadow(0 3px 5px rgba(0, 0, 0, .7)); }
 .branch-map.leaflet-container .leaflet-control-attribution { background: rgba(26, 20, 15, .75); color: #c9a27a; }
 .branch-map.leaflet-container .leaflet-control-attribution a { color: #e8d3b3; }
 .branch-map .leaflet-bar a { background: #2b211a; color: #f5efe3; border-color: rgba(201, 162, 122, .4); }

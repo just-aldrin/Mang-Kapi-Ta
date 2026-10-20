@@ -265,7 +265,7 @@
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(map);
       const icon = L.divIcon({
         className: 'kapi-pin-wrap', iconSize: [76, 49], iconAnchor: [30, 47], popupAnchor: [0, -46],
-        html: '<img class="kapi-pin" src="/assets/images/logo-cream.png" alt="" draggable="false">',
+        html: '<span class="kapi-pin" aria-hidden="true"></span>',
       });
       const pins = branchBtns.map((btn) => {
         const at = [Number(btn.dataset.lat), Number(btn.dataset.lng)];
